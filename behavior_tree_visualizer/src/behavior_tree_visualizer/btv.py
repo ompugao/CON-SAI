@@ -4,7 +4,13 @@ import rospkg
 
 from rqt_gui_py.plugin import Plugin
 from python_qt_binding import loadUi
-from python_qt_binding.QtGui import QWidget
+from python_qt_binding import QT_BINDING_VERSION
+g_PYQT_MAJOR_VERSION = int(QT_BINDING_VERSION.split('.')[0])
+if g_PYQT_MAJOR_VERSION == 4:
+    from python_qt_binding.QtGui import QWidget
+elif g_PYQT_MAJOR_VERSION == 5:
+    from python_qt_binding.QtWidgets import QWidget
+
 from python_qt_binding.QtGui import QPalette
 from python_qt_binding.QtCore import Qt
 
@@ -28,7 +34,7 @@ class BTV(Plugin):
 
         # Get path to UI file
         rp = rospkg.RosPack()
-        ui_file = os.path.join(rp.get_path('behavior_tree_visualizer'), 'resource', 'rqt_dot.ui')
+        ui_file = os.path.join(rp.get_path('behavior_tree_visualizer'), 'resource', 'rqt_dot_qt5.ui')
         
         # Extend the widget with all attributes and children from UI file
         loadUi(ui_file, self._widget)
