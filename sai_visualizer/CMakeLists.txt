@@ -5,6 +5,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   rqt_gui
   rqt_gui_py
+  python_qt_utils
 )
 
 catkin_python_setup()

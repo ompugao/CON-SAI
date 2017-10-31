@@ -34,7 +34,7 @@ class BTV(Plugin):
 
         # Get path to UI file
         rp = rospkg.RosPack()
-        ui_file = os.path.join(rp.get_path('behavior_tree_visualizer'), 'resource', 'rqt_dot_qt5.ui')
+        ui_file = os.path.join(rp.get_path('behavior_tree_visualizer'), 'resource', 'rqt_dot.ui')
         
         # Extend the widget with all attributes and children from UI file
         loadUi(ui_file, self._widget)

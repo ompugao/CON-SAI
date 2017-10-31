@@ -24,32 +24,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from geometry_msgs.msg import Point
 
 # monkey patch
-import types
-import functools
-from python_qt_binding.QtGui import QMouseEvent
-def mouseevent_wrapper(func):
-    if g_PYQT_MAJOR_VERSION == 5:
-        @functools.wraps(func)
-        def wrapper(self, event):
-            def _posF(self):
-                return self.localPos()
-            event.posF = types.MethodType(_posF, event)
-            return func(self, event)
-        return wrapper
-    else:
-        return func
-
-def wheelevent_wrapper(func):
-    if g_PYQT_MAJOR_VERSION == 5:
-        @functools.wraps(func)
-        def wrapper(self, event):
-            def _delta(self):
-                return self.angleDelta()
-            event.delta = types.MethodType(_delta, event)
-            return func(self, event)
-        return wrapper
-    else:
-        return func
+from python_qt_utils import mouseevent_wrapper, wheelevent_wrapper
 
 class ConstWorld():
     def __init__(self):
