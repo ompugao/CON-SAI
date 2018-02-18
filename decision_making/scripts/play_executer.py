@@ -11,6 +11,7 @@ from plays.play_book import PlayBook
 from plays.test_book import TestBook
 from plays.play_dummy import PlayDummy
 
+from field_analysis import FieldAnalysis
 
 class PlayExecuter(object):
 
@@ -22,6 +23,8 @@ class PlayExecuter(object):
 
     def update(self):
         WorldModel.update_world()
+
+        FieldAnalysis.update_field_analysis()
 
         self._select_play()
 
@@ -67,7 +70,7 @@ class PlayExecuter(object):
             role.behavior.set_status(status)
 
         text = "execute : " + self._play.name
-        rospy.loginfo(text)
+        rospy.logerr(text)
 
 
     def _evaluate_play(self):

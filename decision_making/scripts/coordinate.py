@@ -88,7 +88,7 @@ class Coordinate(object):
         self._update_func = self._update_interpose
 
     
-    def set_approach_to_shoot(self, my_role=None, target="CONST_THEIR_GOAL"):
+    def set_approach_to_shoot(self, my_role=None, target="CONST_THEIR_GOAL"): #THEIR
         # targetに向かってボールを蹴るように移動する
 
         self._my_role = my_role

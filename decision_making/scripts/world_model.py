@@ -277,6 +277,8 @@ class WorldModel(object):
 
         elif name[:5] == 'CONST':
             pose = constants.poses[name]
+        
+        #rospy.logerr(WorldModel.get_friend_pose(1))
 
         return pose
 
