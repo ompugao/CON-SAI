@@ -10,6 +10,8 @@ from world_model import WorldModel
 from plays.play_book import PlayBook
 from plays.test_book import TestBook
 from plays.play_dummy import PlayDummy
+from game_evaluator import GameEvaluator
+import numpy as np
 
 
 class PlayExecuter(object):
@@ -18,6 +20,7 @@ class PlayExecuter(object):
         self._play_termination = True
         self._play = PlayDummy()
         self._play_past_time = 0.0
+        self._game_evaluator = GameEvaluator()
 
 
     def update(self):
@@ -34,31 +37,40 @@ class PlayExecuter(object):
     
     def _select_play(self):
         if self._play_termination:
-            # 実行中のRoleをリセット
-            for role in self._play.roles:
-                role.behavior.reset()
+            self._play.reset()
 
             # Extract possible plays from playbook
-            possible_plays = []
+            self.possible_plays = []
             for play in PlayBook.book:
                 if WorldModel.situations[play.applicable]:
-                    possible_plays.append(play)
+                    self.possible_plays.append(play)
 
             # playとtestは混ざらないようにWorldModelで調整している
             for test in TestBook.book:
                 if WorldModel.situations[test.applicable]:
-                    possible_plays.append(test)
-
-            # TODO(Asit) select a play randomly
-            if possible_plays:
-                self._play = possible_plays[0]
-            else:
-                self._play = PlayDummy()
+                    self.possible_plays.append(test)
 
             self._play_past_time = rospy.get_time()
             self._play_termination = False
 
             rospy.logdebug('play reset')
+
+        if len(self.possible_plays) > 0:
+            # XXX: needs hysteresis?
+            aggressiveness =  self._game_evaluator.evaluate()
+            mindiff = np.finfo(np.float32).max
+            chosen_play = self._play
+            for play in self.possible_plays:
+                diff = np.abs(play.aggressiveness - aggressiveness)
+                if diff < mindiff:
+                    # choose the play whose aggressive ness is 
+                    # closest to the current game situation
+                    chosen_play = play
+            if chosen_play is not play:
+                self._play.reset()
+                self._play = chosen_play
+        else:
+            self._play = PlayDummy()
 
 
     def _execute_play(self):
@@ -80,7 +92,7 @@ class PlayExecuter(object):
             else:
                 if status == TaskStatus.SUCCESS or status == TaskStatus.FAILURE:
                     self._play_termination = True
-                    
+
         if self._play.timeout:
             if rospy.get_time() - self._play_past_time > self._play.timeout:
                 self._play_termination = True
@@ -89,5 +101,4 @@ class PlayExecuter(object):
         if (self._play.done and WorldModel.situations[self._play.done]) or \
                 (self._play.done_aborted and 
                         not WorldModel.situations[self._play.done_aborted]):
-
             self._play_termination = True

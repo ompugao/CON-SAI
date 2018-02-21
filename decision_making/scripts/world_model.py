@@ -175,9 +175,9 @@ class WorldModel(object):
         if assignment_type == 'CLOSEST_BALL':
             closest_role = WorldModel._update_closest_role(True)
             if closest_role and closest_role != 'Role_0':
-                old_id = WorldModel.assignments['Role_1']
-                WorldModel.assignments['Role_1'] = WorldModel.assignments[closest_role]
-                WorldModel.assignments[closest_role] = old_id
+                #swap
+                WorldModel.assignments[closest_role], WorldModel.assignments['Role_1'] =\
+                        WorldModel.assignments['Role_1'], WorldModel.assignments[closest_role]
                 # closest_role をRole_1にもどす
                 WorldModel._ball_closest_frined_role = 'Role_1'
 
