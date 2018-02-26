@@ -264,19 +264,21 @@ class WorldModel(object):
             ball_pose = WorldModel._ball_odom.pose.pose.position
             pose = Pose(ball_pose.x, ball_pose.y, 0)
 
-        elif name[:4] == 'Role':
+        elif name.startswith('Role'):
             robot_id = WorldModel.assignments[name]
             pose = WorldModel.get_friend_pose(robot_id)
 
-        elif name[:5] == 'Enemy':
+        elif name.startswith('Enemy'):
             robot_id = WorldModel.enemy_assignments[name]
             pose = WorldModel.get_enemy_pose(robot_id)
 
-        elif name[:6] == 'Threat':
+        elif name.startswith('Threat'):
             robot_id = WorldModel._threat_assignments[name]
             pose = WorldModel.get_enemy_pose(robot_id)
 
-        elif name[:5] == 'CONST':
+        elif name.startswith('CONST'):
+            if name not in constants.poses.keys():
+                return pose  # None
             pose = constants.poses[name]
 
         return pose
@@ -311,7 +313,7 @@ class WorldModel(object):
 
         velocity = WorldModel.get_velocity('Ball')
 
-        if tool.getSizeFromCenter(velocity) > WorldModel._ball_kicked_speed:
+        if tool.getLengthFromCenter(velocity) > WorldModel._ball_kicked_speed:
             kicked = True
 
         return kicked
@@ -514,7 +516,7 @@ class WorldModel(object):
             if pose is None:
                 continue
 
-            dist_to_ball = tool.getSize(pose, ball_pose)
+            dist_to_ball = tool.getLength(pose, ball_pose)
 
             # ヒステリシスをもたせる
             if role == prev_closest_role:

@@ -198,7 +198,7 @@ class Coordinate(object):
 
         arrived = False
 
-        distance = tool.getSize(self.pose, role_pose)
+        distance = tool.getLength(self.pose, role_pose)
 
         # 目標位置との距離、目標角度との差がtolerance以下であれば到着判定
         if distance < self._arrived_position_tolerance:
