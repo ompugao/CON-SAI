@@ -22,7 +22,6 @@ class PlayExecuter(object):
         self._play_past_time = 0.0
         self._game_evaluator = Admiral()
 
-
     def update(self):
         WorldModel.update_world()
 
@@ -58,7 +57,7 @@ class PlayExecuter(object):
         if len(self.possible_plays) > 0:
             # XXX: needs hysteresis?
             aggressiveness = self._game_evaluator.evaluate()
-            rospy.loginfo("agg: %f"%(aggressiveness,))
+            rospy.logdebug("agg: %f"%(aggressiveness,))
             mindiff = np.finfo(np.float32).max
             chosen_play = self._play
             for play in self.possible_plays:
@@ -67,7 +66,8 @@ class PlayExecuter(object):
                     # choose the play whose aggressive ness is
                     # closest to the current game situation
                     chosen_play = play
-            if chosen_play is not play:
+
+            if chosen_play is not self._play:
                 self._play.reset()
                 self._play = chosen_play
         else:
