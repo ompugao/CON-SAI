@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 from role_base import Role
 
 class Play(object):
@@ -19,6 +19,6 @@ class Play(object):
         
     def reset(self,):
         # 実行中のRoleをリセット
-        for role in self._play.roles:
+        for role in self.roles:
             role.behavior.reset()
 

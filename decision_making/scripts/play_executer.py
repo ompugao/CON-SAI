@@ -58,12 +58,13 @@ class PlayExecuter(object):
         if len(self.possible_plays) > 0:
             # XXX: needs hysteresis?
             aggressiveness = self._game_evaluator.evaluate()
+            rospy.loginfo("agg: %f"%(aggressiveness,))
             mindiff = np.finfo(np.float32).max
             chosen_play = self._play
             for play in self.possible_plays:
                 diff = np.abs(play.aggressiveness - aggressiveness)
                 if diff < mindiff:
-                    # choose the play whose aggressive ness is 
+                    # choose the play whose aggressive ness is
                     # closest to the current game situation
                     chosen_play = play
             if chosen_play is not play:

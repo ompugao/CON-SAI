@@ -50,21 +50,25 @@ class Admiral(object):
 
         # XXX: needs to tune a coefficient balance
         evaluation = 0
-        for name, enemy_id in WorldModel._threat_assignments:
-            # NOTE:  use vel.x because ball might be passed to the sideway
-            # NOTE2: the direction to our side should be minus
-            if WorldModel.get_enemy_velocity(enemy_id).x < (-self.risky_enemy_velocity_threshold):
-                evaluation -= WorldModel.get_enemy_velocity(enemy_id).x / (self.risky_enemy_velocity_threshold * len(WorldModel._threat_assignments))
+        norm = len([0 for name, enemy_id in WorldModel._threat_assignments.iteritems() if enemy_id is not None])
+        if norm is not 0:
+            for name, enemy_id in WorldModel._threat_assignments.iteritems():
+                if enemy_id is None:
+                    continue
+                # NOTE:  use vel.x because ball might be passed to the sideway
+                # NOTE2: the direction to our side should be minus
+                if WorldModel.get_enemy_velocity(enemy_id).x < (-self.risky_enemy_velocity_threshold):
+                    evaluation -= WorldModel.get_enemy_velocity(enemy_id).x / (self.risky_enemy_velocity_threshold * norm)
 
         ball_vel_x = WorldModel.get_velocity('Ball').x
         coeff = 1.0
         if ball_vel_x < -self.ball_velocity_threshold:
             # the ball is coming!
-            evaluation -= coeff * self.ball_vel_x
+            evaluation -= coeff * ball_vel_x
 
         if ball_vel_x > self.ball_velocity_threshold:
             # the ball goes toward their goal!
-            evaluation += coeff * self.ball_vel_x
+            evaluation += coeff * ball_vel_x
 
         return evaluation
 
@@ -73,7 +77,7 @@ class Admiral(object):
             return None
 
         ball_pose = WorldModel.get_pose('Ball')
-        length_from_our_goal = tool.getLength(constants.pose[constant_pose_key], ball_pose)
+        length_from_our_goal = tool.getLength(constants.poses[constant_pose_key], ball_pose)
         return hysterisis_state.get_state(length_from_our_goal)
 
     def ball_is_in_our_defence_area(self, ):

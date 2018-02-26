@@ -82,7 +82,7 @@ class Coordinate(object):
 
     def set_pose(self, x=0.0, y=0.0, theta=0.0):
         # 任意の位置に移動する
-        self.pose = Pose(x, y, theta)
+        self._pose = Pose(x, y, theta)
 
         self._update_func = self._update_pose
 
