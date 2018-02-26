@@ -10,7 +10,7 @@ from world_model import WorldModel
 from plays.play_book import PlayBook
 from plays.test_book import TestBook
 from plays.play_dummy import PlayDummy
-from game_evaluator import GameEvaluator
+from game_evaluator import Admiral
 import numpy as np
 
 
@@ -20,7 +20,7 @@ class PlayExecuter(object):
         self._play_termination = True
         self._play = PlayDummy()
         self._play_past_time = 0.0
-        self._game_evaluator = GameEvaluator()
+        self._game_evaluator = Admiral()
 
 
     def update(self):
@@ -57,7 +57,7 @@ class PlayExecuter(object):
 
         if len(self.possible_plays) > 0:
             # XXX: needs hysteresis?
-            aggressiveness =  self._game_evaluator.evaluate()
+            aggressiveness = self._game_evaluator.evaluate()
             mindiff = np.finfo(np.float32).max
             chosen_play = self._play
             for play in self.possible_plays:
