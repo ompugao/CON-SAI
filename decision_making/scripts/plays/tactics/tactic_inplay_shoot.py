@@ -12,12 +12,12 @@ from geometry_msgs.msg import Point
 
 sys.path.append(os.pardir)
 from coordinate import Coordinate
+from consai_msgs.msg import Pose
 
 
 class TacticInplayShoot(Selector):
     def __init__(self, name, my_role):
         super(TacticInplayShoot, self).__init__(name)
-        rospy.logerr("aaaaaaaaaaaaaaaaaaaaaaa")
 
         coord = Coordinate()
         coord.set_receive_ball(my_role)
@@ -29,10 +29,10 @@ class TacticInplayShoot(Selector):
 class _Shoot(Sequence):
     def __init__(self, name, my_role):
         super(_Shoot, self).__init__(name)
-
+ 
         coord = Coordinate()
         #coord.set_approach_to_shoot(my_role, target=Point(0.0,0.0,0))#'CONST_OUR_GOAL'
-        coord.set_approach_to_shoot(my_role, target='CONST_OUR_GOAL')
+        coord.set_approach_to_shoot(my_role, target='ANALY')
         DRIVE = ParallelOne('DRIVE')
         DRIVE.add_child(DynamicDrive('drive_to_ball', my_role, coord))
         DRIVE.add_child(NoNavigation('NoNavigation', my_role))

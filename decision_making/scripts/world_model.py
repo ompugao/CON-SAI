@@ -15,6 +15,7 @@ import constants
 from proto.referee_pb2 import SSL_Referee
 from command import Command
 from observer import Observer
+from field_analysis import FieldAnalysis
 
 
 class WorldModel(object):
@@ -278,6 +279,12 @@ class WorldModel(object):
         elif name[:5] == 'CONST':
             pose = constants.poses[name]
         
+        elif name[:5] == 'ANALY':#評価したエリアの座標
+            Selected_shoot_area = FieldAnalysis.get_analyzed_area_num
+            pose = FieldAnalysis.get_analysis_area_pose(Selected_shoot_area)
+            #rospy.logerr(pose)
+
+
         #rospy.logerr(WorldModel.get_friend_pose(1))
 
         return pose

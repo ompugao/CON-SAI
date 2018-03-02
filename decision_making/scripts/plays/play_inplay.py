@@ -31,8 +31,10 @@ class PlayInPlay(Play):
 
         self.roles[2].loop_enable = True
         self.roles[2].behavior.add_child(
-                TacticInterpose('TacticInterpose', self.roles[2].my_role,
-                    to_dist = 1.5)
+                TacticInterpose('TacticInterpose', self.roles[2].my_role, base="ANALY",
+                    to_dist = 0)
+                #TacticInterpose('TacticInterpose', self.roles[2].my_role,
+                    #to_dist = 0)
                 )
 
         range_y = constants.FieldHalfY - 0.7
