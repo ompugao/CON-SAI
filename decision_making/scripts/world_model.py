@@ -281,7 +281,7 @@ class WorldModel(object):
         
         elif name[:5] == 'ANALY':#評価したエリアの座標
             Selected_shoot_area = FieldAnalysis.get_analyzed_area_num
-            pose = FieldAnalysis.get_analysis_area_pose(Selected_shoot_area)
+            pose = FieldAnalysis.get_analysis_area_pose(9,6,0)
             #rospy.logerr(pose)
 
 

@@ -11,7 +11,6 @@ from collections import OrderedDict, defaultdict
 from nav_msgs.msg import Odometry
 from consai_msgs.msg import Pose
 from consai_msgs.msg import Pose as Velocity
-#from consai_msgs.msg import AnalyzedPose
 
 class FieldAnalysis(object):
 #変数定義
@@ -22,8 +21,8 @@ class FieldAnalysis(object):
     def get_analysis_area_pose(cls, xnum,ynum,yaw):
 
         position = Pose((-4.5 + xnum*0.5),(3 - ynum*0.5),0) #エリアは50cm正方で分割
-        yaw = 0
-        return Pose(position.x, position.y, yaw)
+    
+        return Pose(position.x, position.y,0)
 
     def get_analyzed_area_num(cls):
         xnum = 0
