@@ -11,7 +11,6 @@ class Play(object):
         self.recent_done_aborted = None
         self.timeout = None
         self.assignment_type = None
-        self.aggressiveness = 0.0
 
         self.roles = [
                 Role("Role_0"), Role("Role_1"), Role("Role_2"),

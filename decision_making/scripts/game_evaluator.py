@@ -5,6 +5,7 @@ import constants
 import rospy
 import enum
 import numpy as np
+from plays.play_book import *
 
 class HysterisisState(object):
     def __init__(self, min_threshold, max_threshold):
@@ -35,6 +36,23 @@ class Admiral(object):
         self.ball_velocity_threshold = 1.0
         self.ball_in_our_goal_area_state = HysterisisState(1.2, 1.3)
         self.ball_in_their_goal_area_state = HysterisisState(1.2, 1.3)
+        self.situations = ['IN_PLAY', 'BALL_IN_OUR_DEFENCE', 'BALL_IN_THEIR_DEFENCE']
+
+    def decide_situation(self, situation):
+        return situation in self.situations
+
+    def select_play(self, current_situation):
+        if current_situation is 'IN_PLAY':
+            return self.select_play_inplay()
+        elif current_situation is 'BALL_IN_OUR_DEFENCE':
+            return self.select_play_ball_in_our_defence()
+        elif current_situation is 'BALL_IN_THEIR_DEFENCE':
+            return self.select_play_ball_in_their_defence()
+        else:
+            return PlayDummy()
+
+    def select_play_inplay(self, ):
+
 
     def evaluate(self, ):
         """

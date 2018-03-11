@@ -7,8 +7,8 @@ from pi_trees_ros.pi_trees_ros import *
 from pi_trees_lib.task_setup import *
 
 from world_model import WorldModel
-from plays.play_book import PlayBook
-from plays.test_book import TestBook
+from plays.play_book import *
+from plays.test_book import *
 from plays.play_dummy import PlayDummy
 from game_evaluator import Admiral
 import numpy as np
@@ -20,7 +20,32 @@ class PlayExecuter(object):
         self._play_termination = True
         self._play = PlayDummy()
         self._play_past_time = 0.0
-        self._game_evaluator = Admiral()
+        self._admiral = Admiral()
+        self.testbook = dict()
+        test0 = Test0()
+        test1 = Test1()
+        self.testbook[test0.applicable] = test0
+        self.testbook[test1.applicable] = test1
+        self.playbook = PlayBook()
+        self.playbook.register(PlayHalt())
+        self.playbook.register(PlayOutside())
+        self.playbook.register(PlayStop())
+        self.playbook.register(PlayOurPreKickoff())
+        self.playbook.register(PlayOurKickoffStart())
+        self.playbook.register(PlayOurPrePenalty())
+        self.playbook.register(PlayOurPenaltyStart())
+        self.playbook.register(PlayForceStart())
+        self.playbook.register(PlayInPlay())
+        self.playbook.register(PlayIndirect())
+        self.playbook.register(PlayDirect())
+        self.playbook.register(PlayTheirPreKickoff())
+        self.playbook.register(PlayTheirKickoffStart())
+        self.playbook.register(PlayTheirIndirect())
+        self.playbook.register(PlayTheirDirect())
+        self.playbook.register(PlayTheirPrePenalty())
+        self.playbook.register(PlayTheirPenaltyStart())
+        self.playbook.register(PlayInPlayOurDefence())
+        self.playbook.register(PlayInPlayTheirDefence())
 
     def update(self):
         WorldModel.update_world()
@@ -38,40 +63,26 @@ class PlayExecuter(object):
         if self._play_termination:
             self._play.reset()
 
-            # Extract possible plays from playbook
-            self.possible_plays = []
-            for play in PlayBook.book:
-                if WorldModel.situations[play.applicable]:
-                    self.possible_plays.append(play)
-
-            # playとtestは混ざらないようにWorldModelで調整している
-            for test in TestBook.book:
-                if WorldModel.situations[test.applicable]:
-                    self.possible_plays.append(test)
-
             self._play_past_time = rospy.get_time()
             self._play_termination = False
 
             rospy.logdebug('play reset')
 
-        if len(self.possible_plays) > 0:
-            # XXX: needs hysteresis?
-            aggressiveness = self._game_evaluator.evaluate()
-            rospy.logdebug("agg: %f"%(aggressiveness,))
-            mindiff = np.finfo(np.float32).max
-            chosen_play = self._play
-            for play in self.possible_plays:
-                diff = np.abs(play.aggressiveness - aggressiveness)
-                if diff < mindiff:
-                    # choose the play whose aggressive ness is
-                    # closest to the current game situation
-                    chosen_play = play
+        testplay = self.testbook.get(WorldModel.get_current_situation())
+        if testplay is not None:
+            self._play = testplay
+            return
 
-            if chosen_play is not self._play:
-                self._play.reset()
-                self._play = chosen_play
+        current_situation = WorldModel.get_current_situation()
+        if not self._admiral.decide_situation(current_situation):
+            plays = self.playbook.get_plays()
+            if len(plays) > 0:
+                self._play = plays[0]
+            else:
+                rospy.logwarn("No Play is registered to the situation, named %s", current_situation)
+                self._play = PlayDummy()
         else:
-            self._play = PlayDummy()
+            play = self._admiral.select_play()
 
 
     def _execute_play(self):
