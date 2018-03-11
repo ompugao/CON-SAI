@@ -32,7 +32,7 @@ class _Shoot(Sequence):
  
         coord = Coordinate()
         #coord.set_approach_to_shoot(my_role, target=Point(0.0,0.0,0))#'CONST_OUR_GOAL'
-        coord.set_approach_to_shoot(my_role, target='ANALY')
+        coord.set_approach_to_shoot(my_role, target='ANALY_PATH')
         DRIVE = ParallelOne('DRIVE')
         DRIVE.add_child(DynamicDrive('drive_to_ball', my_role, coord))
         DRIVE.add_child(NoNavigation('NoNavigation', my_role))

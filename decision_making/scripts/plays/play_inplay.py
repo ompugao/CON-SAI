@@ -31,7 +31,7 @@ class PlayInPlay(Play):
 
         self.roles[2].loop_enable = True
         self.roles[2].behavior.add_child(
-                TacticInterpose('TacticInterpose', self.roles[2].my_role, base="ANALY",
+                TacticInterpose('TacticInterpose', self.roles[2].my_role, base="ANALY_PATH",
                     to_dist = 0)
                 #TacticInterpose('TacticInterpose', self.roles[2].my_role,
                     #to_dist = 0)

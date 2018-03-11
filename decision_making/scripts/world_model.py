@@ -280,15 +280,13 @@ class WorldModel(object):
             pose = constants.poses[name]
         
         elif name[:5] == 'ANALY':#評価したエリアの座標
-            Selected_shoot_area = FieldAnalysis.get_analyzed_area_num
-            pose = FieldAnalysis.get_analysis_area_pose(9,6,0)
-            #rospy.logerr(pose)
-
+            if name == 'ANALY_PATH':
+                pose = FieldAnalysis.get_analysis_area_pose(None)
+            rospy.logerr(pose)
 
         #rospy.logerr(WorldModel.get_friend_pose(1))
 
         return pose
-
 
     @classmethod
     def get_velocity(cls, name):
