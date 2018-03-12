@@ -68,21 +68,28 @@ class PlayExecuter(object):
 
             rospy.logdebug('play reset')
 
+        # select test play
         testplay = self.testbook.get(WorldModel.get_current_situation())
         if testplay is not None:
             self._play = testplay
             return
 
+        # select play based on situation
         current_situation = WorldModel.get_current_situation()
         if not self._admiral.decide_situation(current_situation):
-            plays = self.playbook.get_plays()
+            plays = self.playbook.get_plays(current_situation)
             if len(plays) > 0:
                 self._play = plays[0]
             else:
                 rospy.logwarn("No Play is registered to the situation, named %s", current_situation)
                 self._play = PlayDummy()
         else:
-            play = self._admiral.select_play()
+            self._play = self._admiral.select_play(current_situation)
+
+        # just in case
+        if self._play is None:
+            rospy.logwarn("play is None somehow! sets dummy!")
+            self._play = PlayDummy()
 
 
     def _execute_play(self):

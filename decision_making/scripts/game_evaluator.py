@@ -22,11 +22,11 @@ class HysterisisState(object):
                 self.state = True
         return self.state
 
-class GameAdvantage(object):
-    PROTECTIVE = -2
-    DEFFENSIVE = -1
-    OFFENSIVE = 1
-    AGGRESSIVE = 2
+# class GameAdvantage(object):
+#     PROTECTIVE = -2
+#     DEFFENSIVE = -1
+#     OFFENSIVE = 1
+#     AGGRESSIVE = 2
 
 
 # XXX should be implemented in observer?
@@ -37,6 +37,10 @@ class Admiral(object):
         self.ball_in_our_goal_area_state = HysterisisState(1.2, 1.3)
         self.ball_in_their_goal_area_state = HysterisisState(1.2, 1.3)
         self.situations = ['IN_PLAY', 'BALL_IN_OUR_DEFENCE', 'BALL_IN_THEIR_DEFENCE']
+        self.play_inplay = PlayInPlay()
+        self.play_ball_in_our_defence = PlayInPlayOurDefence()
+        self.play_ball_in_their_defence = PlayInPlayTheirDefence()
+        self.play_super_protective = PlaySuperProtective()
 
     def decide_situation(self, situation):
         return situation in self.situations
@@ -52,8 +56,20 @@ class Admiral(object):
             return PlayDummy()
 
     def select_play_inplay(self, ):
+        ball_holder = self.get_ball_holder()
+        rospy.logdebug("current ball holder: %s"%(ball_holder,))
+        if ball_holder is constants.Teams.ENEMY:
+            self.play_super_protective.set_some_argument(0.1)
+            return self.play_super_protective
+        return self.play_inplay
 
+    def select_play_ball_in_our_defence(self, ):
+        return self.play_ball_in_our_defence
 
+    def select_play_ball_in_their_defence(self, ):
+        return self.play_ball_in_their_defence
+
+    '''
     def evaluate(self, ):
         """
         evaluate the current game status.
@@ -89,6 +105,7 @@ class Admiral(object):
             evaluation += coeff * ball_vel_x
 
         return evaluation
+    '''
 
     def ball_is_further_from(self, constant_pose_key, hysterisis_state):
         if constant_pose_key not in constants.poses.keys():
@@ -107,25 +124,27 @@ class Admiral(object):
     def get_ball_holder(self, dist_threshold=0.5):
         ball_pose = WorldModel.get_pose('Ball')
         min_dist = np.finfo(np.float32).max
-        min_robot_id = None
+        min_robot_name = None
 
-        def search_closest_robot(name, robot_id, min_dist, min_robot_id):
+        def search_closest_robot(name, robot_id, min_dist, min_robot_name):
             if robot_id is not None:
-                pose = WorldModel.get_enemy_pose(robot_id)
+                pose = WorldModel.get_pose(name)
                 dist = tool.getLength(pose, ball_pose)
                 if dist < dist_threshold and dist < min_dist:
                     min_dist = dist
-                    min_robot_id = robot_id
-            return min_dist, min_robot_id
+                    min_robot_name = name
+            return min_dist, min_robot_name
 
-        for name, robot_id in WorldModel.assignments:
-            min_dist, min_robot_id = search_closest_robot(name, robot_id, min_dist, min_robot_id)
+        # rospy.loginfo("friend assignments %s"%(WorldModel.assignments.items()))
+        # rospy.loginfo("enemy assignments %s"%(WorldModel.enemy_assignments.items()))
+        for name, robot_id in WorldModel.assignments.iteritems():
+            min_dist, min_robot_name = search_closest_robot(name, robot_id, min_dist, min_robot_name)
 
-        for name, robot_id in WorldModel.enemy_assignments:
-            min_dist, min_robot_id = search_closest_robot(name, robot_id, min_dist, min_robot_id)
+        for name, robot_id in WorldModel.enemy_assignments.iteritems():
+            min_dist, min_robot_name = search_closest_robot(name, robot_id, min_dist, min_robot_name)
         
-        if min_robot_id is not None:
-            if min_robot_id in WorldModel.assignments.values():
+        if min_robot_name is not None:
+            if min_robot_name in WorldModel.assignments.keys():
                 return constants.Teams.FRIEND
             else:
                 return constants.Teams.ENEMY
