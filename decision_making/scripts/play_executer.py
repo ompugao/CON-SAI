@@ -24,8 +24,6 @@ class PlayExecuter(object):
     def update(self):
         WorldModel.update_world()
 
-        FieldAnalysis.update_field_analysis()
-
         self._select_play()
 
         WorldModel.update_assignments(self._play.assignment_type)
@@ -33,6 +31,9 @@ class PlayExecuter(object):
         self._execute_play()
 
         self._evaluate_play()
+
+        FieldAnalysis.update_field_analysis()
+
 
     
     def _select_play(self):
@@ -70,7 +71,7 @@ class PlayExecuter(object):
             role.behavior.set_status(status)
 
         text = "execute : " + self._play.name
-        rospy.logerr(text)
+        #rospy.logerr(text)
 
 
     def _evaluate_play(self):
