@@ -63,9 +63,9 @@ class Coordinate(object):
     def pose(self):
         return self.get_pose()
 
-    @pose.setter
-    def pose(self, pose):
-        self.set_pose(pose.x, pose.y, pose.theta)
+    # @pose.setter
+    # def pose(self, pose):
+    #     self.set_pose(pose.x, pose.y, pose.theta)
 
     def get_pose(self):
         ret = self.update()
@@ -210,11 +210,11 @@ class Coordinate(object):
 
         arrived = False
 
-        distance = tool.getLength(self.pose, role_pose)
+        distance = tool.getLength(self._pose, role_pose)
 
         # 目標位置との距離、目標角度との差がtolerance以下であれば到着判定
         if distance < self._arrived_position_tolerance:
-            diff_angle = tool.normalize(self.pose.theta - role_pose.theta)
+            diff_angle = tool.normalize(self._pose.theta - role_pose.theta)
             
             if tool.normalize(diff_angle) < self._arrived_angle_tolerance:
                 arrived = True
@@ -248,7 +248,7 @@ class Coordinate(object):
 
         interposed_pose.theta = angle_to_target
 
-        self.pose = interposed_pose
+        self._pose = interposed_pose
         
         return True
 
@@ -329,8 +329,8 @@ class Coordinate(object):
         if self._role_is_lower_side:
             tr_approach_pose.y *= -1.0
 
-        self.pose = trans.invertedTransform(tr_approach_pose)
-        self.pose.theta = angle_ball_to_target
+        self._pose = trans.invertedTransform(tr_approach_pose)
+        self._pose.theta = angle_ball_to_target
         
         return True
 
@@ -347,7 +347,7 @@ class Coordinate(object):
                 self._range_y[0], self._range_y[1])
 
         angle = tool.getAngle(keep_pose, target_pose)
-        self.pose = Pose(keep_pose.x, keep_pose.y, angle)
+        self._pose = Pose(keep_pose.x, keep_pose.y, angle)
         
         return True
 
@@ -364,7 +364,7 @@ class Coordinate(object):
                 self._range_x[0], self._range_x[1])
 
         angle = tool.getAngle(keep_pose, target_pose)
-        self.pose = Pose(keep_pose.x, keep_pose.y, angle)
+        self._pose = Pose(keep_pose.x, keep_pose.y, angle)
         
         return True
 
@@ -387,7 +387,7 @@ class Coordinate(object):
         intersection.y = tool.limit(intersection.y,
                 self._range_y[0], self._range_y[1])
 
-        self.pose = Pose(intersection.x, intersection.y, angle)
+        self._pose = Pose(intersection.x, intersection.y, angle)
 
         return True
 
@@ -412,7 +412,7 @@ class Coordinate(object):
         intersection.y = tool.limit(intersection.y,
                 self._range_y[0], self._range_y[1])
 
-        self.pose = Pose(intersection.x, intersection.y, angle)
+        self._pose = Pose(intersection.x, intersection.y, angle)
 
         return True
 
@@ -447,7 +447,7 @@ class Coordinate(object):
                 tr_pose.y = 0.0
                 inv_pose = trans.invertedTransform(tr_pose)
                 angle_to_ball = tool.getAngle(inv_pose, ball_pose)
-                self.pose = Pose(inv_pose.x, inv_pose.y, angle_to_ball)
+                self._pose = Pose(inv_pose.x, inv_pose.y, angle_to_ball)
                 result = True
 
 
