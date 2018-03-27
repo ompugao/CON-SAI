@@ -15,7 +15,7 @@ import numpy as np
 
 class FieldAnalysis(object):
     #定数定義
-    xnum = 18 #X軸18分割、Y軸12分割
+    xnum = 18#X軸18分割、Y軸12分割
     ynum = 12
     FieldX = constants.FieldHalfX*2 #フィールド寸法
     FieldY = constants.FieldHalfY*2 #フィールド寸法
@@ -69,7 +69,7 @@ class FieldAnalysis(object):
         best_Pos = Pose(0,0,0)
         
         i = 13 #X軸num とりあえず13に固定
-        for k in range(12):
+        for k in range(1,12):
             nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
             nearest_enemynum = 0
             #rospy.logerr("oppppp")
@@ -88,11 +88,26 @@ class FieldAnalysis(object):
                 best_Pos = Pose(i,k,0)
                 #rospy.logerr(best_Dist)
                 
-        rospy.logerr(best_Pos)
+        #rospy.logerr(best_Pos)
         FieldAnalysis.analysis_area_score[best_Pos.x][best_Pos.y] = FieldAnalysis.analysis_area_score[best_Pos.x][best_Pos.y]+1
         #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
         return None
 
+    @classmethod
+    def Score_Goal(cls):  #ボールとゴールの直線を評価して、敵がいなければシュート！
+        from world_model import WorldModel
+        i = 17
+        for k in range(6,7):
+            nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
+            for enemy_num in range(6):
+                #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
+                Enemy_pose = complex(WorldModel.get_pose('Enemy_'+str(enemy_num)).x,WorldModel.get_pose('Enemy_'+str(enemy_num)).y)
+                Dist = FieldAnalysis.dotLineDist(Enemy_pose,(WorldModel.get_pose("Ball").x+WorldModel.get_pose("Ball").y*1j,(-4.5 + i*0.5)+(3.0 - k*0.5)*1j))
+                if nearest_Dist >= Dist:
+                    nearest_Dist = Dist
+            if nearest_Dist > 0.2:
+                FieldAnalysis.analysis_area_score[i][k] = 5
+        return None
 
     @classmethod
     def update_field_analysis(cls): #ここで各エリアの点数付を行う
@@ -102,12 +117,13 @@ class FieldAnalysis(object):
             return None 
         #FieldAnalysis.analysis_area_score[9][6] = 2#logerrに表示する用の変数
 
-        ##################実施評価の選択###############
         for i in range(18):
-            for j in range(12):
+            for j in range(12):#12
                 FieldAnalysis.analysis_area_score[i][j] = 0
 
+        ##################実施評価の選択###############
         FieldAnalysis.Score_Easytopass()
+        FieldAnalysis.Score_Goal()
 
         #rospy.logerr(FieldAnalysis.get_analysis_area_pose(1,1))
         #rospy.logerr(WorldModel.get_enemy_pose(1))
