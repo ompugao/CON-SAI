@@ -5,6 +5,7 @@ import math
 import tool
 import constants
 from world_model import WorldModel
+import numpy as np
 
 from consai_msgs.msg import Pose
 
@@ -216,7 +217,7 @@ class Coordinate(object):
         if distance < self._arrived_position_tolerance:
             diff_angle = tool.normalize(self._pose.theta - role_pose.theta)
             
-            if tool.normalize(diff_angle) < self._arrived_angle_tolerance:
+            if np.abs(diff_angle) < self._arrived_angle_tolerance:
                 arrived = True
 
         return arrived
