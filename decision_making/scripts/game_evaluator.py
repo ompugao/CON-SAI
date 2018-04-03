@@ -36,38 +36,61 @@ class Admiral(object):
         self.ball_velocity_threshold = 1.0
         self.ball_in_our_goal_area_state = HysterisisState(1.2, 1.3)
         self.ball_in_their_goal_area_state = HysterisisState(1.2, 1.3)
-        self.situations = ['IN_PLAY', 'BALL_IN_OUR_DEFENCE', 'BALL_IN_THEIR_DEFENCE']
-        self.play_inplay = PlayInPlay()
-        self.play_ball_in_our_defence = PlayInPlayOurDefence()
-        self.play_ball_in_their_defence = PlayInPlayTheirDefence()
-        self.play_super_protective = PlaySuperProtective()
+        self.situations = ['IN_PLAY', 'BALL_IN_OUR_DEFENCE', 'BALL_IN_THEIR_DEFENCE', 'OUR_DIRECT', 'OUR_INDIRECT']
+        self.reset()
+
 
     def decide_situation(self, situation):
         return situation in self.situations
 
+    def reset(self, ):
+        self.last_situation = ""
+        self.finish_keeping_play = (lambda : True)
+        self.current_play = PlayDummy()
+
     def select_play(self, current_situation):
-        if current_situation is 'IN_PLAY':
-            return self.select_play_inplay()
-        elif current_situation is 'BALL_IN_OUR_DEFENCE':
-            return self.select_play_ball_in_our_defence()
-        elif current_situation is 'BALL_IN_THEIR_DEFENCE':
-            return self.select_play_ball_in_their_defence()
-        else:
-            return PlayDummy()
+        if self.current_play.name == "PlayDummy" or \
+                (callable(self.finish_keeping_play) and self.finish_keeping_play()):
+            self.reset()
+            if current_situation is 'IN_PLAY':
+                self.current_play, self.finish_keeping_play = self.select_play_inplay()
+            elif current_situation is 'BALL_IN_OUR_DEFENCE':
+                self.current_play, self.finish_keeping_play = self.select_play_ball_in_our_defence()
+            elif current_situation is 'BALL_IN_THEIR_DEFENCE':
+                self.current_play, self.finish_keeping_play = self.select_play_ball_in_their_defence()
+            elif current_situation is 'OUR_INDIRECT':
+                self.current_play, self.finish_keeping_play = self.select_play_our_indirect()
+            elif current_situation is 'OUR_DIRECT':
+                self.current_play, self.finish_keeping_play = self.select_play_our_direct()
+
+        return self.current_play
 
     def select_play_inplay(self, ):
-        ball_holder = self.get_ball_holder()
+        ball_holder = self.get_ball_holder(dist_threshold=0.2)
         rospy.logdebug("current ball holder: %s"%(ball_holder,))
         if ball_holder is constants.Teams.ENEMY:
-            self.play_super_protective.set_some_argument(0.1)
-            return self.play_super_protective
-        return self.play_inplay
+            play_super_protective = PlaySuperProtective()
+            play_super_protective.set_some_argument(0.1)
+            return play_super_protective, (lambda: True)
+        return PlayInPlay(), (lambda: True)
 
     def select_play_ball_in_our_defence(self, ):
-        return self.play_ball_in_our_defence
+        return PlayInPlayOurDefence(), (lambda: True)
 
     def select_play_ball_in_their_defence(self, ):
-        return self.play_ball_in_their_defence
+        return PlayInPlayTheirDefence(), (lambda: True)
+
+    def select_play_our_indirect(self, ):
+        ball_pose = WorldModel.get_pose('Ball')
+        if ball_pose.x > 3.2 and np.abs(ball_pose.y) > 1.4:
+            def finish_corner_kick_play():
+                p = WorldModel.get_pose('Ball')
+                return p.x < 1.2
+            return PlayOurCornerKick(), finish_corner_kick_play
+        return PlayIndirect(), (lambda: True)
+
+    def select_play_our_direct(self, ):
+        return PlayDirect(), (lambda: True)
 
     '''
     def evaluate(self, ):

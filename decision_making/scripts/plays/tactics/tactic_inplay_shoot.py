@@ -17,6 +17,7 @@ class TacticInplayShoot(Selector):
         coord = Coordinate()
         coord.set_receive_ball(my_role)
 
+        self.verbose = True
         self.add_child(DynamicDrive('drive_to_receive', my_role, coord))
         self.add_child(_Shoot('shoot',my_role))
 

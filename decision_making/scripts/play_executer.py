@@ -77,6 +77,7 @@ class PlayExecuter(object):
         # select play based on situation
         current_situation = WorldModel.get_current_situation()
         if not self._admiral.decide_situation(current_situation):
+            self._admiral.reset()
             plays = self.playbook.get_plays(current_situation)
             if len(plays) > 0:
                 self._play = plays[0]
@@ -105,6 +106,7 @@ class PlayExecuter(object):
         for role in self._play.roles:
             status = role.behavior.get_status()
 
+            rospy.logdebug("role %s status: %s"%(role.my_role, TaskStatus.to_s(status)))
             if role.loop_enable:
                 if status == TaskStatus.SUCCESS or status == TaskStatus.FAILURE:
                     role.behavior.reset()

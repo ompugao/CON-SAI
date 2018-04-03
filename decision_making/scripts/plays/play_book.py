@@ -19,6 +19,7 @@ from play_their_penalty_start import PlayTheirPenaltyStart
 from play_inplay_our_defence import PlayInPlayOurDefence
 from play_inplay_their_defence import PlayInPlayTheirDefence
 from play_super_protective import PlaySuperProtective
+from play_our_corner_kick import PlayOurCornerKick
 from play_dummy import PlayDummy
 
 class PlayBook(object):

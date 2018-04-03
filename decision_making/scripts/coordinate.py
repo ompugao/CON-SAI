@@ -29,7 +29,7 @@ class Coordinate(object):
 
         # arrival parameters
         self._arrived_position_tolerance = 0.1 # unit:meter
-        self._arrived_angle_tolerance = 3.0 * math.pi / 180.0
+        self._arrived_angle_tolerance = np.deg2rad(2) #3.0 * math.pi / 180.0
 
         # interpose
         self._to_dist = None
@@ -86,6 +86,13 @@ class Coordinate(object):
         self._pose = Pose(x, y, theta)
 
         self._update_func = self._update_pose
+
+
+    def set_position_looking_at_target(self, my_role, pose, target="Ball"):
+        self._my_role = my_role
+        self._pose = Pose(pose.x, pose.y, pose.theta)
+        self._target = target
+        self._update_func = self._update_position_looking_at_target
 
 
     def set_interpose(self, base="CONST_OUR_GOAL", target="Ball", to_dist=None, from_dist=None):
@@ -191,11 +198,14 @@ class Coordinate(object):
         self._update_func = self._update_look_intersection
 
 
-    def set_receive_ball(self, my_role=None):
+    def set_receive_ball(self, my_role=None, dist_to_receive=None):
         # Ballが動いていたら、その軌道上に移動する
         
         self._my_role = my_role
         self._receiving = False
+
+        if dist_to_receive is not None:
+            self._can_receive_dist = dist_to_receive # unit:meter
 
         self._update_func = self._update_receive_ball
 
@@ -212,10 +222,11 @@ class Coordinate(object):
         arrived = False
 
         distance = tool.getLength(self._pose, role_pose)
-
+        #print('%s dist :: %f <> %f '%(role, distance,self._arrived_position_tolerance))
         # 目標位置との距離、目標角度との差がtolerance以下であれば到着判定
         if distance < self._arrived_position_tolerance:
             diff_angle = tool.normalize(self._pose.theta - role_pose.theta)
+            #print('%s ang -- %f <> %f '%(role, np.abs(diff_angle),self._arrived_angle_tolerance))
             
             if np.abs(diff_angle) < self._arrived_angle_tolerance:
                 arrived = True
@@ -226,6 +237,12 @@ class Coordinate(object):
     def _update_pose(self):
         return True
 
+    def _update_position_looking_at_target(self,):
+        target_pose = WorldModel.get_pose(self._target)
+        role_pose = WorldModel.get_pose(self._my_role)
+        angle = tool.getAngle(role_pose, target_pose)
+        self._pose.theta = angle
+        return True
 
     def _update_interpose(self):
         base_pose = WorldModel.get_pose(self._base)
