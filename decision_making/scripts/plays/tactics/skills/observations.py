@@ -19,17 +19,3 @@ class BallKicked(Task):
 
         return TaskStatus.RUNNING
 
-class CheckPassPossibility(Task):
-    def __init__(self, name, target):
-        """
-        target :param str: target role/enemy/constants
-        """
-        super(CheckPassPossibility, self).__init__(name)
-        self.target = target
-    
-    def run(self):
-        """
-        return success if it is *not* possible to pass the ball to the target,
-        because of pi_trees_lib.Selector behaviour.
-        """
-        return TaskStatus.SUCCESS

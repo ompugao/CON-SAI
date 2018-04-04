@@ -106,7 +106,7 @@ class PlayExecuter(object):
         for role in self._play.roles:
             status = role.behavior.get_status()
 
-            rospy.logdebug("role %s status: %s"%(role.my_role, TaskStatus.to_s(status)))
+            #rospy.logdebug("role %s status: %s"%(role.my_role, TaskStatus.to_s(status)))
             if role.loop_enable:
                 if status == TaskStatus.SUCCESS or status == TaskStatus.FAILURE:
                     role.behavior.reset()

@@ -34,18 +34,18 @@ class PlayOurCornerKick(Play):
 
         self.roles[2].loop_enable = True
         self.roles[2].behavior.add_child(
-                TacticReceiveBallAt('TacticReceiveBallAt', self.roles[2].my_role, Pose(2.9, -0.6, 0))
+                TacticReceiveBallAt('TacticReceiveBallAt', self.roles[2].my_role, Pose(3.7, 2.1, 0))
                 )
 
         range_y = constants.FieldHalfY - 0.7
         self.roles[3].loop_enable = True
         self.roles[3].behavior.add_child(
-                TacticReceiveBallAt('TacticReceiveBallAt', self.roles[2].my_role, Pose(3.1, 1.2, 0))
+                TacticReceiveBallAt('TacticReceiveBallAt', self.roles[3].my_role, Pose(3.1, 1.2, 0))
                 )
 
         self.roles[4].loop_enable = True
         self.roles[4].behavior.add_child(
-                TacticReceiveBallAt('TacticReceiveBallAt', self.roles[2].my_role, Pose(3.7, 2.1, 0))
+                TacticReceiveBallAt('TacticReceiveBallAt', self.roles[4].my_role, Pose(2.9, -0.6, 0))
                 )
 
         pose1 = Pose(-2.5, range_y, 0)

@@ -82,18 +82,15 @@ class WithDribble(Task):
         return TaskStatus.RUNNING
 
 class FlexibleKick(Task):
-    def __init__(self, name, my_role, enable_chip_condition_func, kick_power_func):
+    def __init__(self, name, my_role, kick_options_func):
         super(FlexibleKick, self).__init__(name)
 
         self._my_role = my_role
-        self._kick_power_func = kick_power_func
-        self._condition = enable_chip_condition_func
+        self._kick_options_func = kick_options_func
 
 
     def run(self):
-        if self._condition():
-            WorldModel.commands[self._my_role].set_kick(self._kick_power_func(), True)
-        else:
-            WorldModel.commands[self._my_role].set_kick(self._kick_power_func(), False)
+        kick_power, chipkick = self._kick_options_func()
+        WorldModel.commands[self._my_role].set_kick(kick_power, chipkick)
 
         return TaskStatus.RUNNING

@@ -29,7 +29,7 @@ class Coordinate(object):
 
         # arrival parameters
         self._arrived_position_tolerance = 0.1 # unit:meter
-        self._arrived_angle_tolerance = np.deg2rad(2) #3.0 * math.pi / 180.0
+        self._arrived_angle_tolerance = np.deg2rad(1.5) #3.0 * math.pi / 180.0
 
         # interpose
         self._to_dist = None
@@ -222,12 +222,12 @@ class Coordinate(object):
         arrived = False
 
         distance = tool.getLength(self._pose, role_pose)
-        #print('%s dist :: %f <> %f '%(role, distance,self._arrived_position_tolerance))
+        #print('      %s dist :: %f <> %f '%(role, distance,self._arrived_position_tolerance))
         # 目標位置との距離、目標角度との差がtolerance以下であれば到着判定
         if distance < self._arrived_position_tolerance:
             diff_angle = tool.normalize(self._pose.theta - role_pose.theta)
-            #print('%s ang -- %f <> %f '%(role, np.abs(diff_angle),self._arrived_angle_tolerance))
-            
+            #print('     %s ang -- %f, %f %f <> %f '%(role, self._pose.theta, role_pose.theta, np.abs(diff_angle),self._arrived_angle_tolerance))
+
             if np.abs(diff_angle) < self._arrived_angle_tolerance:
                 arrived = True
 
