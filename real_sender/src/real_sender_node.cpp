@@ -1,49 +1,73 @@
 #include    <ros/ros.h>
 #include    <ros/console.h>
-#include    <serial.h>
 #include    "serializer/serializer.hpp"
 #include    <iostream>
 #include    <string>
-#include  <unistd.h>
+#include    <unistd.h>
 #include    <consai_msgs/robot_commands.h>
+#include	<sys/types.h>
+#include	<sys/socket.h>
+#include	<netinet/in.h>
+#include    <arpa/inet.h>
 
 class Sender
 {
 public:
-    Sender()
-        : mBaudrate_(57600),mPort_("/dev/ttyUSB0"){
+    Sender(){
     }
-    ~Sender(){}
+    ~Sender(){
+    	close(mSock);
+	}
 
     void setID(const int id){
         mID_ = id;
-        mSerial_ = new serial::Serial(mPort_,mBaudrate_,serial::Timeout::simpleTimeout(1000));
+        mSock = socket(AF_INET, SOCK_DGRAM, 0);
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(12345);
+
+        if(id == 0)         addr.sin_addr.s_addr = inet_addr("192.168.11.10");
+        else if (id == 1)   addr.sin_addr.s_addr = inet_addr("192.168.11.11");
+        else if (id == 2)   addr.sin_addr.s_addr = inet_addr("192.168.11.12");
+        else if (id == 3)   addr.sin_addr.s_addr = inet_addr("192.168.11.13");
+        else if (id == 4)   addr.sin_addr.s_addr = inet_addr("192.168.11.14");
+        else if (id == 5)   addr.sin_addr.s_addr = inet_addr("192.168.11.15");
+        else                addr.sin_addr.s_addr = inet_addr("192.168.11.16");
+
+        ROS_INFO("Set IPaddr");
     }
     void callback(const consai_msgs::robot_commandsConstPtr& msg){
+        ROS_INFO("before Send message");
 
-        RootsSerializer serializer;
+        ScrambleSerializer serializer;
 
-        float   vel_norm  = hypot(msg->vel_surge, msg->vel_sway),
-            vel_theta = atan2(msg->vel_sway, msg->vel_surge) + M_PI/2,
+        float   vel_x  = msg->vel_surge,
+            vel_y = msg->vel_sway,
             omega     = msg->omega,
             kick_power= (msg->kick_speed_x > 0.0) ? 15 : 0,
             dribble_power   = (msg->dribble_power > 0.0) ? 15 : 0;
         RobotCommand::KickType  kick_type = (msg->kick_speed_z > 0.0) ? RobotCommand::CHIP : RobotCommand::STRAIGHT;
 
-        RobotCommand cmd(mID_, vel_norm, vel_theta, omega, dribble_power, kick_power, kick_type);
+        RobotCommand cmd(mID_, vel_x, vel_y, omega, dribble_power, kick_power, kick_type);
 
-        std::string data;
-        serializer.serialize(cmd, &data);
+        char data[10];
+        serializer.serialize(cmd, data);
 
-        mSerial_->write(data);
+        //data[0] = 255;
+
+        //sendto(mSock, "TEST", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
+		sendto(mSock, data, 10, 0, (struct sockaddr *)&addr, sizeof(addr));
+        ROS_INFO("Send message");
     }
+    /*void test_send(void){
+        ROS_INFO("test send");
+        sendto(mSock, "TEST", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
+    }*/
     
 private:
-    const int mBaudrate_;
-    const std::string mPort_;
+	int mSock;
+	struct sockaddr_in addr;
 
     int mID_;
-    serial::Serial *mSerial_;
 };
 
 int main(int argc, char **argv) {
@@ -64,8 +88,8 @@ int main(int argc, char **argv) {
     }
 
     while (ros::ok()) {
-//         ROS_INFO("Loop");
-
+        //ROS_INFO("Send loop");
+        //senders[0].test_send();
         ros::spinOnce();
         r.sleep();
     }

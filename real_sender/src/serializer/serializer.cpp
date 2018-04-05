@@ -8,22 +8,22 @@ RobotCommand::RobotCommand()
 {
 }
 
-RobotCommand::RobotCommand(unsigned int id, float vel_norm, float vel_theta, float omega,
+RobotCommand::RobotCommand(unsigned int id, float vel_x, float vel_y, float omega,
         float dribble_power,
         float kick_power, RobotCommand::KickType kick_type) :
-        _id(id), _vel_norm(vel_norm), _vel_theta(vel_theta), _omega(omega),
+        _id(id), _vel_x(vel_x), _vel_y(vel_y), _omega(omega),
         _dribble_power(dribble_power),
         _kick_power(kick_power), _kick_type(kick_type)
 {}
 
 
-/* Roots Protocol
+/* Scramble Protocol
  * 0: 1111 1111 |HEADER_1 0xFF
  * 1: 1100 0011 |HEADER_2 0xC3
  * 2: 0000 xxxx |x:ID
- * 3: aaaa aaaa |a:vel_norm(0~254)
- * 4: bbbb bbbb |b:vel_theta(0~180)
- * 5: cccc cccc |c:omega(0~254)
+ * 3: aaaa aaaa |a:vel_x(0~255)
+ * 4: bbbb bbbb |b:vel_y(0~255)
+ * 5: cccc cccc |c:omega(0~255)
  * 6: d01e f110 |d:dribble_flag, e:kick_flag, f:chip_enable
  * 7: gggg hhhh |g:dribble_power, h:kick_power
  * 8: **** **** |XOR([2] ~ [7])
@@ -31,84 +31,74 @@ RobotCommand::RobotCommand(unsigned int id, float vel_norm, float vel_theta, flo
  *
  */
 
-const char RootsSerializer::HEADER_1 = 0xFF;
-const char RootsSerializer::HEADER_2 = 0xC3;
-const int RootsSerializer::NUM_DATA = 10;
+const char ScrambleSerializer::HEADER_1 = 0xFF;
+const char ScrambleSerializer::HEADER_2 = 0xC3;
+const int ScrambleSerializer::NUM_DATA = 10;
 
-bool  RootsSerializer::serialize(RobotCommand cmd, std::string* data)
+bool  ScrambleSerializer::serialize(RobotCommand cmd, char* data)
 {
     RobotCommand_Binary cmd_bin = scalingToBinary(cmd);
-    data->resize(NUM_DATA);
 
-    data->at(0) = HEADER_1;
-    data->at(1) = HEADER_2;
+    data[0] = HEADER_1;
+    data[1] = HEADER_2;
 
-    data->at(2) = cmd_bin._id;
+    data[2] = cmd_bin._id;
 
-    data->at(3) = cmd_bin._vel_norm;
-    data->at(4) = cmd_bin._vel_theta;
-    data->at(5) = cmd_bin._omega;
+    data[3] = cmd_bin._vel_x;
+    data[4] = cmd_bin._vel_y;
+    data[5] = cmd_bin._omega;
 
-    data->at(6) = 0x00;
+    data[6] = 0x00;
     // dribble_flag
     if (cmd_bin._dribble_power > 0) {
-        data->at(6) |= 0x80;
+        data[6] |= 0x80;
     }
-    data->at(6) |= 0x20; // magic number for HEADER_2
+    data[6] |= 0x20; // magic number for HEADER_2
     // kick_flag
     if (cmd_bin._kick_power > 0) {
-        data->at(6) |= 0x10;
+        data[6] |= 0x10;
     }
     // chip_enable
     if (cmd_bin._kick_type == RobotCommand_Binary::CHIP) {
-        data->at(6) |= 0x08;
+        data[6] |= 0x08;
     }
-    data->at(6) |= 0x04; // magic number for HEADER_2
+    data[6] |= 0x04; // magic number for HEADER_2
     // TODO : ChargerFlag, ErrFlag
-    data->at(6) |= 0x02;
+    data[6] |= 0x02;
 
     // TODO : Overflow err expression
-    data->at(7) = 0x00;
-    data->at(7) += cmd_bin._dribble_power;
-    data->at(7) <<= 4;
-    data->at(7) += cmd_bin._kick_power;
+    data[7] = 0x00;
+    data[7] += cmd_bin._dribble_power;
+    data[7] <<= 4;
+    data[7] += cmd_bin._kick_power;
 
     // Make checksum
-    data->at(8) = 0x00;
+    data[8] = 0x00;
     for (size_t i=2; i<8; i++) {
-        data->at(8) ^= data->at(i);
+        data[8] ^= data[i];
     }
-    data->at(9) = data->at(8) ^ 0xFF;
+    data[9] = data[8] ^ 0xFF;
 
     return  true;
 }
 
 
 // convert MKS unit to binary data in order to send as packet
-RootsSerializer::RobotCommand_Binary RootsSerializer::scalingToBinary(RobotCommand robot_command)
+ScrambleSerializer::RobotCommand_Binary ScrambleSerializer::scalingToBinary(RobotCommand robot_command)
 {
   RobotCommand_Binary command_binary;
 
   // TODO:copy instances
   command_binary._id = robot_command._id;
 
-  // Velocity Norm
-  if (robot_command._vel_norm < 0.0) {
-    command_binary._vel_norm = 0;
+  // Velocity z
+  if (robot_command._vel_x < 0.0) {
+    command_binary._vel_x = 0;
   } else {
-    command_binary._vel_norm = robot_command._vel_norm * 255 / 4;
-    if (command_binary._vel_norm > 255) {
-        command_binary._vel_norm = 255;
+    command_binary._vel_x = robot_command._vel_x * 255 / 4;
+    if (command_binary._vel_x > 255) {
+        command_binary._vel_x = 255;
     }
-  }
-
-  // Velcity angle
-  robot_command._vel_theta = zeroTo2pi(robot_command._vel_theta);
-  command_binary._vel_theta = int(round(robot_command._vel_theta * 180.0 / M_PI)) / 2;
-  if (robot_command._vel_theta > 180) {
-    command_binary._vel_theta = 180;
-  } else if (robot_command._vel_theta < 0) {
-    command_binary._vel_theta = 0;
   }
 
   // Angular velocity
@@ -150,14 +140,14 @@ RootsSerializer::RobotCommand_Binary RootsSerializer::scalingToBinary(RobotComma
 };
 
 
-float RootsSerializer::piTopi(float angle)
+float ScrambleSerializer::piTopi(float angle)
 {
   while (angle >=  M_PI) angle -= 2*M_PI;
   while (angle < -M_PI) angle += 2*M_PI;
   return  angle;
 }
 
-float RootsSerializer::zeroTo2pi(float angle)
+float ScrambleSerializer::zeroTo2pi(float angle)
 {
   while (angle >= 2*M_PI) angle -= 2*M_PI;
   while (angle < 0)      angle += 2*M_PI;
