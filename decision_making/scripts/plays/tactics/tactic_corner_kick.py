@@ -1,6 +1,7 @@
 
 from pi_trees_ros.pi_trees_ros import *
 from pi_trees_lib.task_setup import *
+from pi_trees_lib_extensions import ConditionalSequence, OverwriteSequenceCondition
 
 from skills.dynamic_drive import DynamicDrive
 from skills.observations import BallKicked
@@ -13,45 +14,8 @@ from world_model import WorldModel
 
 import numpy as np
 
-class ConditionalSequence(Task):
-    def __init__(self, name, condition, *args, **kwargs):
-        """
-        condition :param callable: callable statement which decides if it should process its sequence
-        """
-        super(ConditionalSequence, self).__init__(name, *args, **kwargs)
-        self.condition = condition
- 
-    def run(self):
-        if self._announce:
-            self.announce()
-
-        if not self.condition():
-            #print("%s bad"%(self.name,))
-            if self.reset_after:
-                self.reset()
-            return TaskStatus.FAILURE
-        #print("%s ok"%(self.name,))
-        for c in self.children:
-
-            if c.status == TaskStatus.SUCCESS:
-                continue
-            c.status = c.run()
-            #print('run ' + c.name + ' ' + TaskStatus.to_s(c.status))
-
-            if c.status != TaskStatus.SUCCESS:
-                if c.status == TaskStatus.FAILURE:
-                    if self.reset_after:
-                        self.reset()
-                        return TaskStatus.FAILURE
-                return c.status
-
-        if self.reset_after:
-            self.reset()
-
-        return TaskStatus.SUCCESS
-
 class TacticCornerKick(Sequence):
-    def __init__(self, name, my_role):
+    def __init__(self, name, my_role, ref_cornerkick_state):
         super(TacticCornerKick, self).__init__(name)
 
 
@@ -98,6 +62,7 @@ class TacticCornerKick(Sequence):
                                 return False
                             else:
                                 #print("  next")
+                                pass
                     return True
                 return check_passing_possibility
 
@@ -134,7 +99,8 @@ class TacticCornerKick(Sequence):
                 return kick_options_func
 
 
-            seq = ConditionalSequence(name='pass_to_%d'%(i), reset_after=True, condition=check_passing_possibility_generator(target_role))
+            # XXX normal 'Sequence' is not enough(?)
+            seq = ConditionalSequence(name='pass_to_%d'%(i), condition=check_passing_possibility_generator(target_role)) #reset_after=True
             # coord = Coordinate()
             # coord.set_approach_to_shoot(my_role, target='CONST_THEIR_GOAL')
             coord1 = Coordinate()
@@ -150,6 +116,17 @@ class TacticCornerKick(Sequence):
             kick.add_child(BallKicked('BallKicked'))
 
             seq.add_child(kick)
+
+            class TriggerKicked(Task):
+                def __init__(self, name, ref_state):
+                    super(TriggerKicked, self).__init__(name)
+                    self.ref_state = ref_state
+                def run(self,):
+                    self.ref_state.set_kicked()
+                    return TaskStatus.SUCCESS
+
+            seq.add_child(TriggerKicked('trigger_kicked', ref_cornerkick_state))
+            seq.add_child(OverwriteSequenceCondition('continue_after_kick', seq, (lambda: True)))
 
             select_passing_friend.add_child(seq)
         self.add_child(select_passing_friend)
