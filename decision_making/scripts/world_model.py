@@ -282,7 +282,7 @@ class WorldModel(object):
         elif name[:5] == 'ANALY':#評価したエリアの座標
             if name == 'ANALY_PATH':
                 pose = FieldAnalysis.get_analysis_area_pose(None)
-            rospy.logerr(pose)
+            #rospy.logerr(pose)
 
         #rospy.logerr(WorldModel.get_friend_pose(1))
 
