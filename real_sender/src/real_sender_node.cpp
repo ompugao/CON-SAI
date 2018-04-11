@@ -25,15 +25,75 @@ public:
         addr.sin_family = AF_INET;
         addr.sin_port = htons(12345);
 
-        if(id == 0)         addr.sin_addr.s_addr = inet_addr("192.168.11.10");
+        /*if(id == 0)         addr.sin_addr.s_addr = inet_addr("192.168.11.10");
         else if (id == 1)   addr.sin_addr.s_addr = inet_addr("192.168.11.11");
         else if (id == 2)   addr.sin_addr.s_addr = inet_addr("192.168.11.12");
         else if (id == 3)   addr.sin_addr.s_addr = inet_addr("192.168.11.13");
         else if (id == 4)   addr.sin_addr.s_addr = inet_addr("192.168.11.14");
         else if (id == 5)   addr.sin_addr.s_addr = inet_addr("192.168.11.15");
-        else                addr.sin_addr.s_addr = inet_addr("192.168.11.16");
+        else if (id == 6)   addr.sin_addr.s_addr = inet_addr("192.168.11.16");
+        else if (id == 7)   addr.sin_addr.s_addr = inet_addr("192.168.11.17");
+        else if (id == 8)   addr.sin_addr.s_addr = inet_addr("192.168.11.18");
+        else if (id == 9)   addr.sin_addr.s_addr = inet_addr("192.168.11.19");
+        else if (id == 10)   addr.sin_addr.s_addr = inet_addr("192.168.11.20");
+        else if (id == 11)   addr.sin_addr.s_addr = inet_addr("192.168.11.21");
+        else                addr.sin_addr.s_addr = inet_addr("192.168.11.30");*/
 
-        ROS_INFO("Set IPaddr");
+        //for debug
+        if(id == 0){
+        	addr.sin_addr.s_addr = inet_addr("192.168.11.10");
+        	ROS_ERROR("Set ID_0 IPaddr");
+        }
+        else if (id == 1)  {
+            addr.sin_addr.s_addr = inet_addr("192.168.11.11");
+            ROS_ERROR("Set ID_1 IPaddr");
+        }
+        else if (id == 2){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.12");
+            ROS_ERROR("Set ID_2 IPaddr");
+        }
+        else if (id == 3){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.13");
+            ROS_ERROR("Set ID_3 IPaddr");
+        }
+        else if (id == 4){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.14");
+            ROS_ERROR("Set ID_4 IPaddr");
+        }
+        else if (id == 5){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.15");
+            ROS_ERROR("Set ID_5 IPaddr");
+        }
+        else if (id == 6){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.16");
+            ROS_ERROR("Set ID_6 IPaddr");
+        }
+        else if (id == 7){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.17");
+            ROS_ERROR("Set ID_7 IPaddr");
+        }
+        else if (id == 8){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.18");
+            ROS_ERROR("Set ID_8 IPaddr");
+        }
+        else if (id == 9){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.19");
+            ROS_ERROR("Set ID_9 IPaddr");
+        }
+        else if (id == 10){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.20");
+            ROS_ERROR("Set ID_10 IPaddr");
+        }
+        else if (id == 11){
+            addr.sin_addr.s_addr = inet_addr("192.168.11.21");
+            ROS_ERROR("Set ID_11 IPaddr");
+        }
+        else{
+            addr.sin_addr.s_addr = inet_addr("192.168.11.30");
+            ROS_ERROR("Set ID_x IPaddr");
+        }
+
+        ROS_ERROR("Set IPaddr");
     }
     void callback(const consai_msgs::robot_commandsConstPtr& msg){
         ROS_INFO("before Send message");
