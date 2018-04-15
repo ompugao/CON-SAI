@@ -18,7 +18,7 @@ import constants
 import weakref
 
 class PlayOurCornerKick(Play):
-    def __init__(self):
+    def __init__(self, mode):
         super(PlayOurCornerKick, self).__init__('PlayOurCornerKick')
 
         self.applicable = "OUR_INDIRECT"
@@ -52,20 +52,32 @@ class PlayOurCornerKick(Play):
                         )
         self.roles[1].behavior.add_child(l)
 
+        if mode < 0:
+            role2_pose = Pose(3.7, 2.1, 0)
+            role2_receiving_area = [receive_field_separate_x, 0, constants.FieldHalfX, constants.FieldHalfY]
+        else:
+            role2_pose = Pose(3.7, -2.1, 0)
+            role2_receiving_area = [receive_field_separate_x, -constants.FieldHalfY, constants.FieldHalfX, 0]
+
         self.roles[2].loop_enable = True
         self.roles[2].clear_behavior()
         self.roles[2].behavior.add_child(
                 TacticReceiveBallAtAndShoot('TacticReceiveBallAtAndShoot', self.roles[2].my_role, weakref.proxy(self.state), \
-                        Pose(3.7, 2.1, 0), \
-                        [receive_field_separate_x, 0, constants.FieldHalfX, constants.FieldHalfY])
+                        role2_pose, role2_receiving_area)
                 )
+
+        if mode < 0:
+            role3_pose = Pose(2.9, -0.6, 0)
+            role3_receiving_area = [receive_field_separate_x, -constants.FieldHalfY, constants.FieldHalfX, 0]
+        else:
+            role3_pose = Pose(2.9, 0.6, 0)
+            role3_receiving_area = [receive_field_separate_x, 0, constants.FieldHalfX, constants.FieldHalfY]
 
         self.roles[3].loop_enable = True
         self.roles[3].clear_behavior()
         self.roles[3].behavior.add_child(
                 TacticReceiveBallAtAndShoot('TacticReceiveBallAtAndShoot', self.roles[3].my_role, weakref.proxy(self.state), \
-                        Pose(2.9, -0.6, 0), \
-                        [receive_field_separate_x, -constants.FieldHalfY, constants.FieldHalfX, 0])
+                        role3_pose, role3_receiving_area)
                 )
 
         self.roles[4].loop_enable = True

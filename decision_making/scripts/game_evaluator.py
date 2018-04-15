@@ -47,6 +47,8 @@ class Admiral(object):
         self.last_situation = ""
         self.finish_keeping_play = (lambda : True)
         self.current_play = PlayDummy()
+        import gc
+        gc.collect()
 
     def select_play(self, current_situation):
         if self.current_play.name == "PlayDummy" or \
@@ -86,7 +88,9 @@ class Admiral(object):
             def finish_corner_kick_play():
                 p = WorldModel.get_pose('Ball')
                 return p.x < 1.2
-            return PlayOurCornerKick(), finish_corner_kick_play
+            # XXX: add some extra modes?
+            mode = np.sign(ball_pose.y)
+            return PlayOurCornerKick(mode), finish_corner_kick_play
         return PlayIndirect(), (lambda: True)
 
     def select_play_our_direct(self, ):
