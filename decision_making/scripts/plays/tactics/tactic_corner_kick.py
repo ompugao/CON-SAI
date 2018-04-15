@@ -1,11 +1,11 @@
 
 from pi_trees_ros.pi_trees_ros import *
 from pi_trees_lib.task_setup import *
-from pi_trees_lib_extensions import ConditionalSequence, OverwriteSequenceCondition
-
+from pi_trees_lib_extensions import ConditionalSequence, OverwriteSequenceCondition, TaskDone, SetTaskDone, ParallelOneIgnoringFailure
 from skills.dynamic_drive import DynamicDrive
 from skills.observations import BallKicked
 from skills.adjustments import WithKick, NoBallAvoidance, FlexibleKick
+import weakref
 
 sys.path.append(os.pardir)
 from coordinate import Coordinate
@@ -18,7 +18,8 @@ class TacticCornerKick(Sequence):
     def __init__(self, name, my_role, ref_cornerkick_state):
         super(TacticCornerKick, self).__init__(name)
 
-
+        corner_kick = ParallelOneIgnoringFailure('corner_kick')
+        task_done = TaskDone('has_done')
         select_passing_friend = RandomSelector('select_passing_friend')
         for i in range(0, 6):
             target_role = "Role_%d"%(i)
@@ -92,7 +93,7 @@ class TacticCornerKick(Sequence):
                     kick_power = 0
                     if b_needs_chipkick:
                         # TODO measure a good chip kick -> flying distance model
-                        kick_power = 1.1 * a_length
+                        kick_power = 0.9 * a_length
                     else:
                         kick_power = 6.0
                     return kick_power, b_needs_chipkick
@@ -117,6 +118,7 @@ class TacticCornerKick(Sequence):
 
             seq.add_child(kick)
 
+            p = ParallelAll('parallelall')
             class TriggerKicked(Task):
                 def __init__(self, name, ref_state):
                     super(TriggerKicked, self).__init__(name)
@@ -124,11 +126,14 @@ class TacticCornerKick(Sequence):
                 def run(self,):
                     self.ref_state.set_kicked()
                     return TaskStatus.SUCCESS
-
-            seq.add_child(TriggerKicked('trigger_kicked', ref_cornerkick_state))
-            seq.add_child(OverwriteSequenceCondition('continue_after_kick', seq, (lambda: True)))
+            p.add_child(TriggerKicked('trigger_kicked', ref_cornerkick_state))
+            #p.add_child(OverwriteSequenceCondition('continue_after_kick', seq, (lambda: True)))
+            p.add_child(SetTaskDone('set_task_done', weakref.proxy(task_done)))
+            seq.add_child(p)
 
             select_passing_friend.add_child(seq)
-        self.add_child(select_passing_friend)
+        corner_kick.add_child(select_passing_friend)
+        corner_kick.add_child(task_done)
+        self.add_child(corner_kick)
 
         ### 

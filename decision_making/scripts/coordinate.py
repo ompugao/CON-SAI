@@ -29,7 +29,7 @@ class Coordinate(object):
 
         # arrival parameters
         self._arrived_position_tolerance = 0.1 # unit:meter
-        self._arrived_angle_tolerance = np.deg2rad(1.5) #3.0 * math.pi / 180.0
+        self._arrived_angle_tolerance = np.deg2rad(2.0) #3.0 * math.pi / 180.0
 
         # interpose
         self._to_dist = None
@@ -59,6 +59,7 @@ class Coordinate(object):
         self._can_receive_dist = 1.0 # unit:meter
         self._can_receive_hysteresis = 0.3
         self._receiving = False
+        self._receive_forcelly = False
 
     @property
     def pose(self):
@@ -198,7 +199,7 @@ class Coordinate(object):
         self._update_func = self._update_look_intersection
 
 
-    def set_receive_ball(self, my_role=None, dist_to_receive=None):
+    def set_receive_ball(self, my_role=None, dist_to_receive=None, force_receive=False, target=None):
         # Ballが動いていたら、その軌道上に移動する
         
         self._my_role = my_role
@@ -206,6 +207,10 @@ class Coordinate(object):
 
         if dist_to_receive is not None:
             self._can_receive_dist = dist_to_receive # unit:meter
+
+        if force_receive and target is not None:
+            self._receive_forcelly = force_receive
+            self._target = target
 
         self._update_func = self._update_receive_ball
 
@@ -467,6 +472,8 @@ class Coordinate(object):
                 angle_to_ball = tool.getAngle(inv_pose, ball_pose)
                 self._pose = Pose(inv_pose.x, inv_pose.y, angle_to_ball)
                 result = True
+        elif self._receive_forcelly:
+            return self._update_approach_to_shoot()
 
 
         return result

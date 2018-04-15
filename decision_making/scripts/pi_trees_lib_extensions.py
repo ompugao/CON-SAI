@@ -11,6 +11,7 @@ class ConditionalSequence(Task):
         Be careful about a condition of this task and the state of the behaviour tree which this task belongs to.
         """
         super(ConditionalSequence, self).__init__(name, *args, **kwargs)
+        self._default_condition = condition
         self.set_condition(condition)
  
     def set_condition(self, condition):
@@ -45,6 +46,10 @@ class ConditionalSequence(Task):
 
         return TaskStatus.SUCCESS
 
+    def reset(self):
+        super(ConditionalSequence, self).reset()
+        self.condition = self._default_condition
+
 class OverwriteSequenceCondition(Task):
     def __init__(self, name, conditional_seq, condition):
         super(OverwriteSequenceCondition, self).__init__(name)
@@ -54,3 +59,69 @@ class OverwriteSequenceCondition(Task):
     def run(self):
         self.conditional_seq.set_condition(self.condition)
         return TaskStatus.SUCCESS
+
+class ParallelOneIgnoringFailure(Task):
+    """
+    TODO: write me
+    """
+    def __init__(self, name, *args, **kwargs):
+        super(ParallelOneIgnoringFailure, self).__init__(name, *args, **kwargs)
+
+        self.num_failure = 0
+
+    def run(self):
+        n_children = len(self.children)
+
+        for c in self.children:
+            # if c.status == TaskStatus.FAILURE:
+            #     continue
+
+            c.status = c.run()
+
+            if c.status == TaskStatus.SUCCESS:
+                if self.reset_after:
+                    self.reset()
+                return TaskStatus.SUCCESS
+
+            if c.status == TaskStatus.FAILURE:
+                self.num_failure += 1
+
+        if self.num_failure == n_children:
+            if self.reset_after:
+                self.reset()
+            return TaskStatus.FAILURE
+        else:
+            return TaskStatus.RUNNING
+
+    def reset(self):
+        super(ParallelOneIgnoringFailure, self).reset()
+        self.num_failure = 0
+
+class TaskDone(Task):
+    def __init__(self, name):
+        super(TaskDone, self).__init__(name)
+        self._b_done = False
+
+    def set_done(self, ):
+        self._b_done = True
+
+    def run(self):
+        if self._b_done:
+            return TaskStatus.SUCCESS
+        return TaskStatus.RUNNING
+
+class SetTaskDone(Task):
+    def __init__(self, name, task_done):
+        super(SetTaskDone, self).__init__(name)
+        self.task_done = task_done
+    def run(self):
+        self.task_done.set_done()
+        return TaskStatus.SUCCESS
+
+class Print(Task):
+    def __init__(self, name):
+        super(Print, self).__init__(name)
+
+    def run(self):
+        print('%s is running!'%(self.name))
+        return TaskStatus.RUNNING

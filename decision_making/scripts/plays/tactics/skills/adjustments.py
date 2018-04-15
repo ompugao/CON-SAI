@@ -53,6 +53,17 @@ class NoDefenceAreaAvoidance(Task):
 
         return TaskStatus.RUNNING
 
+class WithDefenceAreaAvoidance(Task):
+    def __init__(self, name, my_role):
+        super(WithDefenceAreaAvoidance, self).__init__(name)
+
+        self._my_role = my_role
+
+    def run(self):
+        WorldModel.commands[self._my_role].avoid_defence_area = True
+
+        return TaskStatus.RUNNING
+
 
 class WithChip(Task):
     def __init__(self, name, my_role, kick_power=6.0):
