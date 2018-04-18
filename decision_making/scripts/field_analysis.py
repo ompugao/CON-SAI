@@ -23,16 +23,17 @@ class FieldAnalysis(object):
     FieldY = constants.FieldHalfY*2 #フィールド寸法
 
     #変数定義
-    area_score = np.array([[0]*ygrid for i in range(xgrid)])
+    #area_score = np.array([[0]*ygrid for i in range(xgrid)])
+    area_score = np.zeros([xgrid, ygrid])
 
     @classmethod
     def write_area_score(self,i, j,score): #スコア記述用
-        FieldAnalysis.area_score[i+((FieldAnalysis.xgrid-1)/2)][j+((FieldAnalysis.ygrid-1)/2)] = score
+        FieldAnalysis.area_score[i+((FieldAnalysis.xgrid-1)/2), j+((FieldAnalysis.ygrid-1)/2)] = score
         return None
 
     @classmethod
     def read_area_score(self,i, j): #スコア読み込み用
-        return FieldAnalysis.area_score[i+((FieldAnalysis.xgrid-1)/2)][j+((FieldAnalysis.ygrid-1)/2)]
+        return FieldAnalysis.area_score[i+((FieldAnalysis.xgrid-1)/2), j+((FieldAnalysis.ygrid-1)/2)]
 ############################################################
 
 ##############　評価用　計算関係　#####################
@@ -82,31 +83,35 @@ class FieldAnalysis(object):
     @classmethod
     def Score_Easytopass(cls):  #パスがしやすいエリアを評価。 #相手フィールドX軸一定(X=13) で、Y軸だけで評価。
         from world_model import WorldModel
-        best_Dist = 0 #最も大きい値を入れたいので、初期値０
-        best_Pos = Pose(0,0,0)
+        best_dist = 0 #最も大きい値を入れたいので、初期値０
+        best_pos = Pose(0,0,0)
         
         i = 4 #X軸num とりあえず13に固定
         for k in range(-6,7,1):#1,12
-            nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
+            nearest_dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
             nearest_enemynum = 0
             #rospy.logerr(k)
             for enemy_num in range(6):
                 #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
-                Enemy_pose = complex(WorldModel.get_pose('Enemy_'+str(enemy_num)).x,WorldModel.get_pose('Enemy_'+str(enemy_num)).y)
-                Dist = FieldAnalysis.dotLineDist(Enemy_pose,(WorldModel.get_pose("Ball").x+WorldModel.get_pose("Ball").y*1j,(i*0.5)+(k*0.5)*1j))
-                if nearest_Dist >= Dist:
-                    nearest_Dist = Dist
+                enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
+                if enemy_pose is None:
+                    continue
+                c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
+                ball_pose = WorldModel.get_pose("Ball")
+                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*0.5)+(k*0.5)*1j))
+                if nearest_dist > dist:
+                    nearest_dist = dist
                     nearest_enemynum = enemy_num
                     #rospy.logerr(nearest_Dist)
                 #rospy.logerr(nearest_enemynum)
                 #rospy.logerr(nearest_Dist)
-            if best_Dist <= nearest_Dist:
-                best_Dist = nearest_Dist
-                best_Pos = Pose(i,k,0)
-                rospy.logerr(best_Dist)
+            if best_dist <= nearest_dist:
+                best_dist = nearest_dist
+                best_pos = Pose(i,k,0)
+                rospy.logdebug("best distance %f"%(best_dist))
         
-        #rospy.logerr(best_Pos)
-        FieldAnalysis.write_area_score(best_Pos.x,best_Pos.y,3)
+        #rospy.logerr(best_pos)
+        FieldAnalysis.write_area_score(best_pos.x, best_pos.y, 3)
         #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
         return None
 
@@ -118,8 +123,12 @@ class FieldAnalysis(object):
             nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
             for enemy_num in range(6):
                 #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
-                Enemy_pose = complex(WorldModel.get_pose('Enemy_'+str(enemy_num)).x,WorldModel.get_pose('Enemy_'+str(enemy_num)).y)
-                Dist = FieldAnalysis.dotLineDist(Enemy_pose,(WorldModel.get_pose("Ball").x+WorldModel.get_pose("Ball").y*1j,(i*0.5)+(k*0.5)*1j))
+                enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
+                if enemy_pose is None:
+                    continue
+                c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
+                ball_pose = WorldModel.get_pose('Ball')
+                Dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x+ball_pose.y*1j,(i*0.5)+(k*0.5)*1j))
                 if nearest_Dist >= Dist:
                     nearest_Dist = Dist
             if nearest_Dist > 0.2:
