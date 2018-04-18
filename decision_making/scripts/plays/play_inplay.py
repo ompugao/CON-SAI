@@ -2,6 +2,12 @@
 from play_stop import PlayStop
 
 from tactics.tactic_inplay_shoot import TacticInplayShoot
+from tactics.tactic_interpose import TacticInterpose
+from tactics.tactic_keep import TacticKeep
+from tactics.tactic_intersection import TacticIntersection
+import constants
+
+from consai_msgs.msg import Pose
 
 class PlayInPlay(PlayStop):
     def __init__(self):
