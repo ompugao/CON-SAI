@@ -7,9 +7,11 @@ from pi_trees_ros.pi_trees_ros import *
 from pi_trees_lib.task_setup import *
 
 from world_model import WorldModel
-from plays.play_book import PlayBook
-from plays.test_book import TestBook
+from plays.play_book import *
+from plays.test_book import *
 from plays.play_dummy import PlayDummy
+from game_evaluator import Admiral
+import numpy as np
 
 
 class PlayExecuter(object):
@@ -18,7 +20,32 @@ class PlayExecuter(object):
         self._play_termination = True
         self._play = PlayDummy()
         self._play_past_time = 0.0
-
+        self._admiral = Admiral()
+        self.testbook = dict()
+        test0 = Test0()
+        test1 = Test1()
+        self.testbook[test0.applicable] = test0
+        self.testbook[test1.applicable] = test1
+        self.playbook = PlayBook()
+        self.playbook.register(PlayHalt())
+        self.playbook.register(PlayOutside())
+        self.playbook.register(PlayStop())
+        self.playbook.register(PlayOurPreKickoff())
+        self.playbook.register(PlayOurKickoffStart())
+        self.playbook.register(PlayOurPrePenalty())
+        self.playbook.register(PlayOurPenaltyStart())
+        self.playbook.register(PlayForceStart())
+        self.playbook.register(PlayInPlay())
+        self.playbook.register(PlayIndirect())
+        self.playbook.register(PlayDirect())
+        self.playbook.register(PlayTheirPreKickoff())
+        self.playbook.register(PlayTheirKickoffStart())
+        self.playbook.register(PlayTheirIndirect())
+        self.playbook.register(PlayTheirDirect())
+        self.playbook.register(PlayTheirPrePenalty())
+        self.playbook.register(PlayTheirPenaltyStart())
+        self.playbook.register(PlayInPlayOurDefence())
+        self.playbook.register(PlayInPlayTheirDefence())
 
     def update(self):
         WorldModel.update_world()
@@ -34,31 +61,36 @@ class PlayExecuter(object):
     
     def _select_play(self):
         if self._play_termination:
-            # 実行中のRoleをリセット
-            for role in self._play.roles:
-                role.behavior.reset()
-
-            # Extract possible plays from playbook
-            possible_plays = []
-            for play in PlayBook.book:
-                if WorldModel.situations[play.applicable]:
-                    possible_plays.append(play)
-
-            # playとtestは混ざらないようにWorldModelで調整している
-            for test in TestBook.book:
-                if WorldModel.situations[test.applicable]:
-                    possible_plays.append(test)
-
-            # TODO(Asit) select a play randomly
-            if possible_plays:
-                self._play = possible_plays[0]
-            else:
-                self._play = PlayDummy()
+            self._play.reset()
 
             self._play_past_time = rospy.get_time()
             self._play_termination = False
 
             rospy.logdebug('play reset')
+
+        # select test play
+        testplay = self.testbook.get(WorldModel.get_current_situation())
+        if testplay is not None:
+            self._play = testplay
+            return
+
+        # select play based on situation
+        current_situation = WorldModel.get_current_situation()
+        if not self._admiral.decide_situation(current_situation):
+            self._admiral.reset()
+            plays = self.playbook.get_plays(current_situation)
+            if len(plays) > 0:
+                self._play = plays[0]
+            else:
+                rospy.logwarn("No Play is registered to the situation, named %s", current_situation)
+                self._play = PlayDummy()
+        else:
+            self._play = self._admiral.select_play(current_situation)
+
+        # just in case
+        if self._play is None:
+            rospy.logwarn("play is None somehow! sets dummy!")
+            self._play = PlayDummy()
 
 
     def _execute_play(self):
@@ -74,13 +106,14 @@ class PlayExecuter(object):
         for role in self._play.roles:
             status = role.behavior.get_status()
 
+            #rospy.logdebug("role %s status: %s"%(role.my_role, TaskStatus.to_s(status)))
             if role.loop_enable:
                 if status == TaskStatus.SUCCESS or status == TaskStatus.FAILURE:
                     role.behavior.reset()
             else:
                 if status == TaskStatus.SUCCESS or status == TaskStatus.FAILURE:
                     self._play_termination = True
-                    
+
         if self._play.timeout:
             if rospy.get_time() - self._play_past_time > self._play.timeout:
                 self._play_termination = True
@@ -89,5 +122,4 @@ class PlayExecuter(object):
         if (self._play.done and WorldModel.situations[self._play.done]) or \
                 (self._play.done_aborted and 
                         not WorldModel.situations[self._play.done_aborted]):
-
             self._play_termination = True

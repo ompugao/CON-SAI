@@ -5,6 +5,7 @@ import math
 import tool
 import constants
 from world_model import WorldModel
+import numpy as np
 
 from consai_msgs.msg import Pose
 
@@ -14,10 +15,10 @@ import rospy
 class Coordinate(object):
     # Coordinateクラスは、フィールド状況をもとに移動目標位置、目標角度を生成する
     # Coordinateクラスには、移動目標の生成方法をsetしなければならない
-    # Coordinateクラスのposeが生成された移動目標である
+    # Coordinateクラスのget_pose()にて現在の移動目標が取得できる
 
     def __init__(self):
-        self.pose = Pose() # pos_x, pos_y, thta
+        self._pose = Pose() # pos_x, pos_y, thta
 
         self._base = None # string data
         self._target = None # string data
@@ -28,7 +29,7 @@ class Coordinate(object):
 
         # arrival parameters
         self._arrived_position_tolerance = 0.1 # unit:meter
-        self._arrived_angle_tolerance = 3.0 * math.pi / 180.0
+        self._arrived_angle_tolerance = np.deg2rad(2.0) #3.0 * math.pi / 180.0
 
         # interpose
         self._to_dist = None
@@ -58,21 +59,41 @@ class Coordinate(object):
         self._can_receive_dist = 1.0 # unit:meter
         self._can_receive_hysteresis = 0.3
         self._receiving = False
+        self._receive_forcelly = False
 
+    @property
+    def pose(self):
+        return self.get_pose()
+
+    # @pose.setter
+    # def pose(self, pose):
+    #     self.set_pose(pose.x, pose.y, pose.theta)
+
+    def get_pose(self):
+        ret = self.update()
+        if ret:
+            return self._pose
+        else:
+            return None
 
     def update(self):
-        result = False
-        if self._update_func:
-            result = self._update_func()
-
-        return result
+        if callable(self._update_func):
+            return self._update_func()
+        return False
 
 
     def set_pose(self, x=0.0, y=0.0, theta=0.0):
         # 任意の位置に移動する
-        self.pose = Pose(x, y, theta)
+        self._pose = Pose(x, y, theta)
 
         self._update_func = self._update_pose
+
+
+    def set_position_looking_at_target(self, my_role, pose, target="Ball"):
+        self._my_role = my_role
+        self._pose = Pose(pose.x, pose.y, pose.theta)
+        self._target = target
+        self._update_func = self._update_position_looking_at_target
 
 
     def set_interpose(self, base="CONST_OUR_GOAL", target="Ball", to_dist=None, from_dist=None):
@@ -178,11 +199,18 @@ class Coordinate(object):
         self._update_func = self._update_look_intersection
 
 
-    def set_receive_ball(self, my_role=None):
+    def set_receive_ball(self, my_role=None, dist_to_receive=None, force_receive=False, target=None):
         # Ballが動いていたら、その軌道上に移動する
         
         self._my_role = my_role
         self._receiving = False
+
+        if dist_to_receive is not None:
+            self._can_receive_dist = dist_to_receive # unit:meter
+
+        if force_receive and target is not None:
+            self._receive_forcelly = force_receive
+            self._target = target
 
         self._update_func = self._update_receive_ball
 
@@ -198,13 +226,14 @@ class Coordinate(object):
 
         arrived = False
 
-        distance = tool.getSize(self.pose, role_pose)
-
+        distance = tool.getLength(self._pose, role_pose)
+        #print('      %s dist :: %f <> %f '%(role, distance,self._arrived_position_tolerance))
         # 目標位置との距離、目標角度との差がtolerance以下であれば到着判定
         if distance < self._arrived_position_tolerance:
-            diff_angle = tool.normalize(self.pose.theta - role_pose.theta)
-            
-            if tool.normalize(diff_angle) < self._arrived_angle_tolerance:
+            diff_angle = tool.normalize(self._pose.theta - role_pose.theta)
+            #print('     %s ang -- %f, %f %f <> %f '%(role, self._pose.theta, role_pose.theta, np.abs(diff_angle),self._arrived_angle_tolerance))
+
+            if np.abs(diff_angle) < self._arrived_angle_tolerance:
                 arrived = True
 
         return arrived
@@ -213,6 +242,12 @@ class Coordinate(object):
     def _update_pose(self):
         return True
 
+    def _update_position_looking_at_target(self,):
+        target_pose = WorldModel.get_pose(self._target)
+        role_pose = WorldModel.get_pose(self._my_role)
+        angle = tool.getAngle(role_pose, target_pose)
+        self._pose.theta = angle
+        return True
 
     def _update_interpose(self):
         base_pose = WorldModel.get_pose(self._base)
@@ -224,11 +259,11 @@ class Coordinate(object):
         angle_to_target = tool.getAngle(base_pose, target_pose)
         
         interposed_pose = Pose(0, 0, 0)
-        if not self._to_dist is None:
+        if self._to_dist is not None:
             trans = tool.Trans(base_pose, angle_to_target)
             tr_interposed_pose = Pose(self._to_dist, 0.0, 0)
             interposed_pose = trans.invertedTransform(tr_interposed_pose)
-        elif not self._from_dist is None:
+        elif self._from_dist is not None:
             angle_to_base = tool.getAngle(target_pose, base_pose)
             trans = tool.Trans(target_pose, angle_to_base)
             tr_interposed_pose = Pose(self._from_dist, 0.0, 0)
@@ -236,7 +271,7 @@ class Coordinate(object):
 
         interposed_pose.theta = angle_to_target
 
-        self.pose = interposed_pose
+        self._pose = interposed_pose
         
         return True
 
@@ -258,11 +293,11 @@ class Coordinate(object):
         tr_role_pose = trans.transform(role_pose)
 
         # tr_role_poseのloser_side判定にヒステリシスをもたせる
-        if self._role_is_lower_side == True and \
+        if self._role_is_lower_side is True and \
                 tr_role_pose.y > self._role_pose_hystersis:
             self._role_is_lower_side = False
 
-        elif self._role_is_lower_side == False and \
+        elif self._role_is_lower_side is False and \
                 tr_role_pose.y < - self._role_pose_hystersis:
             self._role_is_lower_side = True
 
@@ -317,8 +352,8 @@ class Coordinate(object):
         if self._role_is_lower_side:
             tr_approach_pose.y *= -1.0
 
-        self.pose = trans.invertedTransform(tr_approach_pose)
-        self.pose.theta = angle_ball_to_target
+        self._pose = trans.invertedTransform(tr_approach_pose)
+        self._pose.theta = angle_ball_to_target
         
         return True
 
@@ -335,7 +370,7 @@ class Coordinate(object):
                 self._range_y[0], self._range_y[1])
 
         angle = tool.getAngle(keep_pose, target_pose)
-        self.pose = Pose(keep_pose.x, keep_pose.y, angle)
+        self._pose = Pose(keep_pose.x, keep_pose.y, angle)
         
         return True
 
@@ -352,7 +387,7 @@ class Coordinate(object):
                 self._range_x[0], self._range_x[1])
 
         angle = tool.getAngle(keep_pose, target_pose)
-        self.pose = Pose(keep_pose.x, keep_pose.y, angle)
+        self._pose = Pose(keep_pose.x, keep_pose.y, angle)
         
         return True
 
@@ -375,7 +410,7 @@ class Coordinate(object):
         intersection.y = tool.limit(intersection.y,
                 self._range_y[0], self._range_y[1])
 
-        self.pose = Pose(intersection.x, intersection.y, angle)
+        self._pose = Pose(intersection.x, intersection.y, angle)
 
         return True
 
@@ -400,7 +435,7 @@ class Coordinate(object):
         intersection.y = tool.limit(intersection.y,
                 self._range_y[0], self._range_y[1])
 
-        self.pose = Pose(intersection.x, intersection.y, angle)
+        self._pose = Pose(intersection.x, intersection.y, angle)
 
         return True
 
@@ -411,7 +446,7 @@ class Coordinate(object):
         ball_vel = WorldModel.get_velocity('Ball')
         result = False
 
-        if WorldModel.ball_is_moving():
+        if WorldModel._observer.ball_is_moving(WorldModel.get_velocity('Ball')):
             angle_velocity = tool.getAngleFromCenter(ball_vel)
             trans = tool.Trans(ball_pose, angle_velocity)
 
@@ -423,11 +458,11 @@ class Coordinate(object):
 
             fabs_y = math.fabs(tr_pose.y)
 
-            if self._receiving == False and \
+            if self._receiving is False and \
                     fabs_y < self._can_receive_dist - self._can_receive_hysteresis:
                 self._receiving = True
 
-            elif self._receiving == True and \
+            elif self._receiving is True and \
                     fabs_y > self._can_receive_dist + self._can_receive_hysteresis:
                 self._receiving = False
 
@@ -435,8 +470,10 @@ class Coordinate(object):
                 tr_pose.y = 0.0
                 inv_pose = trans.invertedTransform(tr_pose)
                 angle_to_ball = tool.getAngle(inv_pose, ball_pose)
-                self.pose = Pose(inv_pose.x, inv_pose.y, angle_to_ball)
+                self._pose = Pose(inv_pose.x, inv_pose.y, angle_to_ball)
                 result = True
+        elif self._receive_forcelly:
+            return self._update_approach_to_shoot()
 
 
         return result

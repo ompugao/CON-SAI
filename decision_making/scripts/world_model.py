@@ -112,7 +112,6 @@ class WorldModel(object):
     _refbox_dict = _refbox_dict_blue
 
     _observer = Observer()
-    _ball_kicked_speed = 1.0
 
     _ball_closest_frined_role = None
     _ball_closest_enemy_role = None
@@ -175,9 +174,9 @@ class WorldModel(object):
         if assignment_type == 'CLOSEST_BALL':
             closest_role = WorldModel._update_closest_role(True)
             if closest_role and closest_role != 'Role_0':
-                old_id = WorldModel.assignments['Role_1']
-                WorldModel.assignments['Role_1'] = WorldModel.assignments[closest_role]
-                WorldModel.assignments[closest_role] = old_id
+                #swap
+                WorldModel.assignments[closest_role], WorldModel.assignments['Role_1'] =\
+                        WorldModel.assignments['Role_1'], WorldModel.assignments[closest_role]
                 # closest_role をRole_1にもどす
                 WorldModel._ball_closest_frined_role = 'Role_1'
 
@@ -264,19 +263,21 @@ class WorldModel(object):
             ball_pose = WorldModel._ball_odom.pose.pose.position
             pose = Pose(ball_pose.x, ball_pose.y, 0)
 
-        elif name[:4] == 'Role':
+        elif name.startswith('Role'):
             robot_id = WorldModel.assignments[name]
             pose = WorldModel.get_friend_pose(robot_id)
 
-        elif name[:5] == 'Enemy':
+        elif name.startswith('Enemy'):
             robot_id = WorldModel.enemy_assignments[name]
             pose = WorldModel.get_enemy_pose(robot_id)
 
-        elif name[:6] == 'Threat':
+        elif name.startswith('Threat'):
             robot_id = WorldModel._threat_assignments[name]
             pose = WorldModel.get_enemy_pose(robot_id)
 
-        elif name[:5] == 'CONST':
+        elif name.startswith('CONST'):
+            if name not in constants.poses.keys():
+                return pose  # None
             pose = constants.poses[name]
 
         return pose
@@ -305,25 +306,6 @@ class WorldModel(object):
         return velocity
 
     
-    @classmethod
-    def ball_kicked(cls):
-        kicked = False
-
-        velocity = WorldModel.get_velocity('Ball')
-
-        if tool.getSizeFromCenter(velocity) > WorldModel._ball_kicked_speed:
-            kicked = True
-
-        return kicked
-
-
-    @classmethod
-    def ball_is_moving(cls):
-        velocity = WorldModel.get_velocity('Ball')
-
-        return WorldModel._observer.ball_is_moving(velocity)
-
-
     @classmethod
     def get_friend_pose(cls, robot_id):
 
@@ -449,8 +431,8 @@ class WorldModel(object):
         ball_pose = WorldModel.get_pose('Ball')
 
         # ボールが動いたらインプレイ判定、refbox_commandを上書きする
-        if WorldModel._current_refbox_command[-5:] == 'START' or \
-                WorldModel._current_refbox_command[-6:] == 'DIRECT':
+        if WorldModel._current_refbox_command.endswith('START') or \
+                WorldModel._current_refbox_command.endswith('DIRECT'):
             if WorldModel._observer.ball_is_moved(ball_pose):
                 WorldModel._current_refbox_command = 'IN_PLAY'
         else:
@@ -488,6 +470,9 @@ class WorldModel(object):
         WorldModel._current_situation = situation
         WorldModel.situations[WorldModel._current_situation] = True
 
+    @classmethod
+    def get_current_situation(cls, ):
+        return WorldModel._current_situation
 
     @classmethod
     def _update_closest_role(cls, is_friend_role=True):
@@ -514,7 +499,7 @@ class WorldModel(object):
             if pose is None:
                 continue
 
-            dist_to_ball = tool.getSize(pose, ball_pose)
+            dist_to_ball = tool.getLength(pose, ball_pose)
 
             # ヒステリシスをもたせる
             if role == prev_closest_role:

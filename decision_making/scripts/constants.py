@@ -1,4 +1,5 @@
 from geometry_msgs.msg import Point
+import enum
 
 FieldX = 9.0
 FieldY = 6.0
@@ -28,6 +29,7 @@ poses = {
         'CONST_THEIR_PENALTY_MARK' : Point(FieldHalfX - DefenceLength, 0.0, 0)
         }
 
+Teams = enum.IntEnum('Teams', names='FRIEND, ENEMY, NOBODY')
 
 def set_field(length, width):
     global FieldX, FieldY, FieldHalfX, FieldHalfY

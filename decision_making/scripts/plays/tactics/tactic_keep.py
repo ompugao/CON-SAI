@@ -8,7 +8,7 @@ sys.path.append(os.pardir)
 from coordinate import Coordinate
 
 class TacticKeep(ParallelAll):
-    def __init__(self, name, my_role, to_dist=None, target='Ball', keep_x=None, 
+    def __init__(self, name, my_role, target='Ball', keep_x=None, 
             keep_y=None, range_high=10.0, range_low=-10.0):
         super(TacticKeep, self).__init__(name)
 

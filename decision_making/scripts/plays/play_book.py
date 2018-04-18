@@ -18,27 +18,20 @@ from play_their_pre_penalty import PlayTheirPrePenalty
 from play_their_penalty_start import PlayTheirPenaltyStart
 from play_inplay_our_defence import PlayInPlayOurDefence
 from play_inplay_their_defence import PlayInPlayTheirDefence
-
+from play_super_protective import PlaySuperProtective
+from play_our_corner_kick import PlayOurCornerKick
+from play_dummy import PlayDummy
 
 class PlayBook(object):
+    def __init__(self, ):
+        self.books = dict()
 
-    book = [] 
-    book.append(PlayHalt())
-    book.append(PlayOutside())
-    book.append(PlayStop())
-    book.append(PlayOurPreKickoff())
-    book.append(PlayOurKickoffStart())
-    book.append(PlayOurPrePenalty())
-    book.append(PlayOurPenaltyStart())
-    book.append(PlayForceStart())
-    book.append(PlayInPlay())
-    book.append(PlayIndirect())
-    book.append(PlayDirect())
-    book.append(PlayTheirPreKickoff())
-    book.append(PlayTheirKickoffStart())
-    book.append(PlayTheirIndirect())
-    book.append(PlayTheirDirect())
-    book.append(PlayTheirPrePenalty())
-    book.append(PlayTheirPenaltyStart())
-    book.append(PlayInPlayOurDefence())
-    book.append(PlayInPlayTheirDefence())
+    def get_plays(self, situation):
+        if not self.books.has_key(situation):
+            return []
+        else:
+            return self.books[situation]
+    def register(self, play):
+        if not self.books.has_key(play.applicable):
+            self.books[play.applicable] = []
+        self.books[play.applicable].append(play)

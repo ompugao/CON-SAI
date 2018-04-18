@@ -24,13 +24,16 @@ class Observer(object):
         self._ball_is_in_our_defence = False
         self._ball_is_in_their_defence = False
         self._ball_is_moving = False
+        self._ball_kicked_speed = 1.0
 
+    def ball_has_kicked(self, velocity):
+        return tool.getLengthFromCenter(velocity) > self._ball_kicked_speed
 
     def ball_is_in_field(self, pose):
         fabs_x = math.fabs(pose.x)
         fabs_y = math.fabs(pose.y)
 
-        if self._ball_is_in_field == True:
+        if self._ball_is_in_field is True:
             if fabs_x > constants.FieldHalfX + self._hysteresis or \
                     fabs_y > constants.FieldHalfY + self._hysteresis:
                 self._ball_is_in_field = False
@@ -49,7 +52,7 @@ class Observer(object):
 
 
     def ball_is_moved(self, pose):
-        if tool.getSize(self._ball_initial_pose, pose) > self._moved_threshold:
+        if tool.getLength(self._ball_initial_pose, pose) > self._moved_threshold:
             self._ball_is_moved = True
 
         return self._ball_is_moved
@@ -99,7 +102,7 @@ class Observer(object):
 
 
     def ball_is_moving(self, velocity):
-        ball_speed = tool.getSizeFromCenter(velocity)
+        ball_speed = tool.getLengthFromCenter(velocity)
 
         if self._ball_is_moving == False and \
                 ball_speed > self._moving_speed_threshold + self._moving_speed_hysteresis:
