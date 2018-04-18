@@ -123,5 +123,5 @@ class Print(Task):
         super(Print, self).__init__(name)
 
     def run(self):
-        print('%s is running!'%(self.name))
+        rospy.loginfo('%s is running!'%(self.name))
         return TaskStatus.RUNNING
