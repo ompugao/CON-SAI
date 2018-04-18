@@ -34,7 +34,7 @@ class TacticReceiveBallAtAndShoot(Sequence):
                 ball_pose = WorldModel.get_pose('Ball')
                 if _receiving_area[0] < ball_pose.x < _receiving_area[2] \
                         and _receiving_area[1] < ball_pose.y < _receiving_area[3]:
-                    print("%s will take ball!"%(_my_role))
+                    rospy.logdebug("%s will take ball!"%(_my_role))
                     return True
                 return False
             return condition
@@ -54,7 +54,7 @@ class TacticReceiveBallAtAndShoot(Sequence):
         drive = ParallelOne('drive')
         drive.add_child(DynamicDrive('drive_to_ball', my_role, coord))
         drive.add_child(NoBallAvoidance('NoBallAvoidance', my_role))
-        drive.add_child(WithDefenceAreaAvoidance('AvoidDefenceArea', my_role))
+        #drive.add_child(WithDefenceAreaAvoidance('AvoidDefenceArea', my_role))
         drive.add_child(Print('%s drive'%(my_role)))
 
         shoot = ParallelOne('shoot')
@@ -63,7 +63,7 @@ class TacticReceiveBallAtAndShoot(Sequence):
         shoot.add_child(NoBallAvoidance('NoBallAvoidance', my_role))
         shoot.add_child(WithDefenceAreaAvoidance('AvoidDefenceArea', my_role))
         shoot.add_child(BallKicked('BallKicked'))
-        drive.add_child(Print('%s shoot'%(my_role)))
+        shoot.add_child(Print('%s shoot'%(my_role)))
 
         shoot_seq.add_child(drive)
         shoot_seq.add_child(shoot)
