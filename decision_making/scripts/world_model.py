@@ -15,6 +15,7 @@ import constants
 from proto.referee_pb2 import SSL_Referee
 from command import Command
 from observer import Observer
+from field_analysis import FieldAnalysis
 
 
 class WorldModel(object):
@@ -279,9 +280,15 @@ class WorldModel(object):
             if name not in constants.poses.keys():
                 return pose  # None
             pose = constants.poses[name]
+        
+        elif name[:5] == 'ANALY':#評価したエリアの座標
+            if name == 'ANALY_PATH':
+                pose = FieldAnalysis.get_analysis_area_pose(None)
+            #rospy.logerr(pose)
+
+        #rospy.logerr(WorldModel.get_friend_pose(1))
 
         return pose
-
 
     @classmethod
     def get_velocity(cls, name):

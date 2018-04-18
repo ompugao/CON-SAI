@@ -13,6 +13,7 @@ from plays.play_dummy import PlayDummy
 from game_evaluator import Admiral
 import numpy as np
 
+from field_analysis import FieldAnalysis
 
 class PlayExecuter(object):
 
@@ -57,6 +58,9 @@ class PlayExecuter(object):
         self._execute_play()
 
         self._evaluate_play()
+
+        FieldAnalysis.update_field_analysis()
+
 
     
     def _select_play(self):
