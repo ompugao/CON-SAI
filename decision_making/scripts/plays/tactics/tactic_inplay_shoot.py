@@ -1,5 +1,4 @@
-import rospy
-
+# -*- coding: utf-8 -*-
 from pi_trees_ros.pi_trees_ros import *
 from pi_trees_lib.task_setup import *
 
