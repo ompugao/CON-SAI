@@ -6,7 +6,7 @@
 
 typedef std::complex<double> Complex;
 
-namespace Tool{
+namespace Tool {
     inline double normalize(double angle){
         while(angle > M_PI){
             angle -= 2.0*M_PI;
@@ -16,7 +16,6 @@ namespace Tool{
         }
         return angle;
     }
-
     inline double toDegree(double angle) { return angle * 180.0 * M_1_PI;}
     inline double toRadian(double angle) { return angle * 0.00555555 * M_PI;}
     inline double getAngle(const Complex &z) { return normalize(std::arg(z));}
