@@ -32,12 +32,14 @@
     </node>
 
     <!-- launch Decision maker -->
-    <node name="decision_maker" pkg="decision_making" type="decision_making_node.py" />
+    <node name="decision_maker" pkg="decision_making" type="decision_making_node.py" output="screen" respawn="true">
+      <env name="ROS_PYTHON_LOG_CONFIG_FILE" value="$(find ai_core)/config/python_logging_debug.conf"/>
+    </node>
 
     <node name="avoiding_point_generator" pkg="avoiding_point_generator" type="avoiding_point_generator_node" />
 
     <!-- launch "launch manager" -->
-    <node name="launch_manager" pkg="launch_manager" type="launch_manager.py" />
+    <node name="launch_manager" pkg="launch_manager" type="launch_manager.py"/> <!--output="screen"-->
 
     <!-- <include file="$(find ssl_joystick_operation)/launch/ssl_joystick_operation.launch" /> -->
 
