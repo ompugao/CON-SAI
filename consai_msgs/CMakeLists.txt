@@ -26,7 +26,6 @@ find_package(catkin REQUIRED COMPONENTS
    FieldLineSegment.msg
    FieldCircularArc.msg
    GeometryFieldSize.msg
-   AnalyzedPose.msg
  )
 
  generate_messages(
