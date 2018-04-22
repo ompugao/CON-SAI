@@ -1,8 +1,8 @@
 from geometry_msgs.msg import Point
 import enum
 
-FieldX = 9.0
-FieldY = 6.0
+FieldX = 12.0
+FieldY = 9.0
 
 PenaltyX = 3.3
 PenaltyY = 1.2
