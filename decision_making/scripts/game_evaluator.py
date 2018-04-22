@@ -72,7 +72,6 @@ class Admiral(object):
         rospy.logdebug("current ball holder: %s"%(ball_holder,))
         if ball_holder is constants.Teams.ENEMY:
             play_super_protective = PlaySuperProtective()
-            play_super_protective.set_some_argument(0.1)
             return play_super_protective, (lambda: True)
         return PlayInPlay(), (lambda: True)
 
@@ -84,10 +83,10 @@ class Admiral(object):
 
     def select_play_our_indirect(self, ):
         ball_pose = WorldModel.get_pose('Ball')
-        if ball_pose.x > 3.2 and np.abs(ball_pose.y) > 1.4:
+        if ball_pose.x > (0.7*constants.FieldHalfX) and np.abs(ball_pose.y) > (0.45*constants.FieldHalfY):
             def finish_corner_kick_play():
                 p = WorldModel.get_pose('Ball')
-                return p.x < 1.2
+                return p.x < (0.4 * constants.FieldHalfX)
             # XXX: add some extra modes?
             mode = np.sign(ball_pose.y)
             return PlayOurCornerKick(mode), finish_corner_kick_play

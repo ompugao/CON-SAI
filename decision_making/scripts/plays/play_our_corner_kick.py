@@ -36,8 +36,8 @@ class PlayOurCornerKick(Play):
                     range_low = -constants.GoalHalfSize)
                 )
 
-        abort_cornerkick_play_x = 1.2
-        receive_field_separate_x = 2.6
+        abort_cornerkick_play_x = 0.4 * constants.FieldHalfX
+        receive_field_separate_x = 0.86 * constants.FieldHalfX
 
         self.roles[1].loop_enable = True
         self.roles[1].clear_behavior()
