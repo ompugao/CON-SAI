@@ -18,66 +18,63 @@ RobotCommand::RobotCommand(unsigned int id, float vel_x, float vel_y, float omeg
 
 
 /* Scramble Protocol
- * 0: 1111 1111 |HEADER_1 0xFF
- * 1: 1100 0011 |HEADER_2 0xC3
- * 2: 0000 xxxx |x:ID
- * 3: aaaa aaaa |a:vel_x(0~255)
- * 4: bbbb bbbb |b:vel_y(0~255)
- * 5: cccc cccc |c:omega(0~255)
- * 6: d01e f110 |d:dribble_flag, e:kick_flag, f:chip_enable
- * 7: gggg hhhh |g:dribble_power, h:kick_power
- * 8: **** **** |XOR([2] ~ [7])
- * 9: **** **** |XOR([8],0xFF)
+ * 0: 0101 0011 |HEADER
+ * 1: 0000 xxxx |x:robot ID
+ * 2: aaaa aaaa |a:vel_x(0~255) neutral = 127
+ * 3: bbbb bbbb |b:vel_y(0~255) neutral = 127
+ * 4: cccc cccc |c:omega(0~255) neutral = 127
+ * 5: d01e f110 |d:dribble_flag, e:kick_flag, f:chip_enable
+ * 6: gggg hhhh |g:dribble_power, h:kick_power
  *
  */
 
-const char ScrambleSerializer::HEADER_1 = 0xFF;
-const char ScrambleSerializer::HEADER_2 = 0xC3;
-const int ScrambleSerializer::NUM_DATA = 10;
+const char ScrambleSerializer::HEADER = 0x53;
+const int ScrambleSerializer::NUM_DATA = 7;
+const int ScrambleSerializer::Vx_max = 5;
+const int ScrambleSerializer::Vy_max = 5;
 
 bool  ScrambleSerializer::serialize(RobotCommand cmd, char* data)
 {
     RobotCommand_Binary cmd_bin = scalingToBinary(cmd);
 
-    data[0] = HEADER_1;
-    data[1] = HEADER_2;
+    data[0] = HEADER;
 
-    data[2] = cmd_bin._id;
+    data[1] = cmd_bin._id;
 
-    data[3] = cmd_bin._vel_x;
-    data[4] = cmd_bin._vel_y;
-    data[5] = cmd_bin._omega;
+    data[2] = cmd_bin._vel_x;
+    data[3] = cmd_bin._vel_y;
+    data[4] = cmd_bin._omega;
 
-    data[6] = 0x00;
+    data[5] = 0x00;
     // dribble_flag
     if (cmd_bin._dribble_power > 0) {
-        data[6] |= 0x80;
+        data[5] |= 0x80;
     }
-    data[6] |= 0x20; // magic number for HEADER_2
+    data[5] |= 0x20; // magic number for HEADER_2
     // kick_flag
     if (cmd_bin._kick_power > 0) {
-        data[6] |= 0x10;
+        data[5] |= 0x10;
     }
     // chip_enable
     if (cmd_bin._kick_type == RobotCommand_Binary::CHIP) {
-        data[6] |= 0x08;
+        data[5] |= 0x08;
     }
-    data[6] |= 0x04; // magic number for HEADER_2
+    data[5] |= 0x04; // magic number for HEADER_2
     // TODO : ChargerFlag, ErrFlag
-    data[6] |= 0x02;
+    data[5] |= 0x02;
 
     // TODO : Overflow err expression
-    data[7] = 0x00;
-    data[7] += cmd_bin._dribble_power;
-    data[7] <<= 4;
-    data[7] += cmd_bin._kick_power;
+    data[6] = 0x00;
+    data[6] += cmd_bin._dribble_power;
+    data[6] <<= 4;
+    data[6] += cmd_bin._kick_power;
 
-    // Make checksum
-    data[8] = 0x00;
+    // Make checksum roots
+    /*data[8] = 0x00;
     for (size_t i=2; i<8; i++) {
         data[8] ^= data[i];
     }
-    data[9] = data[8] ^ 0xFF;
+    data[9] = data[8] ^ 0xFF;*/
 
     return  true;
 }
@@ -91,14 +88,24 @@ ScrambleSerializer::RobotCommand_Binary ScrambleSerializer::scalingToBinary(Robo
   // TODO:copy instances
   command_binary._id = robot_command._id;
 
-  // Velocity z
-  if (robot_command._vel_x < 0.0) {
+  // Velocity vx
+  robot_command._vel_x = round(robot_command._vel_x * 128 / Vx_max) + 127;
+  if (robot_command._vel_x > 254) {
+    command_binary._vel_x = 254;
+  } else if(robot_command._vel_x < 0){
     command_binary._vel_x = 0;
-  } else {
-    command_binary._vel_x = robot_command._vel_x * 255 / 4;
-    if (command_binary._vel_x > 255) {
-        command_binary._vel_x = 255;
-    }
+  } else{
+    command_binary._vel_x = robot_command._vel_x;    
+  }
+
+  // Velocity vy
+  robot_command._vel_y = round(robot_command._vel_y * 128 / Vy_max) + 127;
+  if (robot_command._vel_y > 254) {
+    command_binary._vel_y = 254;
+  } else if(robot_command._vel_y < 0){
+    command_binary._vel_y = 0;
+  } else{
+    command_binary._vel_y = robot_command._vel_y;    
   }
 
   // Angular velocity

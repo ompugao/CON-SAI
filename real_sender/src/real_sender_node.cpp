@@ -41,7 +41,7 @@ public:
 
         //for debug
         if(id == 0){
-        	addr.sin_addr.s_addr = inet_addr("192.168.11.10");
+        	addr.sin_addr.s_addr = inet_addr("192.168.11.2");
         	ROS_ERROR("Set ID_0 IPaddr");
         }
         else if (id == 1)  {
@@ -114,13 +114,13 @@ public:
 
         //data[0] = 255;
         //for debug
-        if(mID_== 0) sendto(mSock, "ID0", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
+        /*if(mID_== 0) sendto(mSock, "ID0", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
         else if(mID_== 1) sendto(mSock, "ID1", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
         else if(mID_== 2) sendto(mSock, "ID2", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
         else if(mID_== 3) sendto(mSock, "ID3", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
         else if(mID_== 4) sendto(mSock, "ID4", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
-        else if(mID_== 5) sendto(mSock, "ID5", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
-		//sendto(mSock, data, 10, 0, (struct sockaddr *)&addr, sizeof(addr));
+        else if(mID_== 5) sendto(mSock, "ID5", 4, 0, (struct sockaddr *)&addr, sizeof(addr));*/
+		sendto(mSock, data, 7, 0, (struct sockaddr *)&addr, sizeof(addr));
         ROS_INFO("Send message");
     }
     /*void test_send(void){

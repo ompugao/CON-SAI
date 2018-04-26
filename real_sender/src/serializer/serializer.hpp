@@ -31,8 +31,11 @@ public:
   bool  serialize(RobotCommand cmd, char* data);
 
 private:
-  static const char  HEADER_1, HEADER_2;
+  static const char  HEADER;
   static const int  NUM_DATA;
+  static const int  Vx_max;
+  static const int Vy_max;
+
 
   class RobotCommand_Binary
   {
