@@ -41,7 +41,7 @@ public:
 
         //for debug
         if(id == 0){
-        	addr.sin_addr.s_addr = inet_addr("192.168.11.2");
+        	addr.sin_addr.s_addr = inet_addr("192.168.11.10");
         	ROS_ERROR("Set ID_0 IPaddr");
         }
         else if (id == 1)  {
@@ -109,11 +109,12 @@ public:
 
         RobotCommand cmd(mID_, vel_x, vel_y, omega, dribble_power, kick_power, kick_type);
 
-        char data[10];
+        char data[7];
         serializer.serialize(cmd, data);
 
-        //data[0] = 255;
         //for debug
+        //if(mID_ == 0)
+	    //    ROS_ERROR("%d", data[2]);
         /*if(mID_== 0) sendto(mSock, "ID0", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
         else if(mID_== 1) sendto(mSock, "ID1", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
         else if(mID_== 2) sendto(mSock, "ID2", 4, 0, (struct sockaddr *)&addr, sizeof(addr));

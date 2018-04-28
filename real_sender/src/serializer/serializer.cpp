@@ -23,15 +23,16 @@ RobotCommand::RobotCommand(unsigned int id, float vel_x, float vel_y, float omeg
  * 2: aaaa aaaa |a:vel_x(0~255) neutral = 127
  * 3: bbbb bbbb |b:vel_y(0~255) neutral = 127
  * 4: cccc cccc |c:omega(0~255) neutral = 127
- * 5: d01e f110 |d:dribble_flag, e:kick_flag, f:chip_enable
+ * 5: d00e f000 |d:dribble_flag, e:kick_flag, f:chip_enable
  * 6: gggg hhhh |g:dribble_power, h:kick_power
  *
  */
 
 const char ScrambleSerializer::HEADER = 0x53;
 const int ScrambleSerializer::NUM_DATA = 7;
-const int ScrambleSerializer::Vx_max = 5;
-const int ScrambleSerializer::Vy_max = 5;
+const float ScrambleSerializer::Vx_max = 5.0; //max speed of vx: 5 m/s
+const float ScrambleSerializer::Vy_max = 5.0; //max speed of vy: 5 m/s
+const float ScrambleSerializer::omega_max = (2*M_PI); //max speed of omega: 2*pi rad/s
 
 bool  ScrambleSerializer::serialize(RobotCommand cmd, char* data)
 {
@@ -50,7 +51,6 @@ bool  ScrambleSerializer::serialize(RobotCommand cmd, char* data)
     if (cmd_bin._dribble_power > 0) {
         data[5] |= 0x80;
     }
-    data[5] |= 0x20; // magic number for HEADER_2
     // kick_flag
     if (cmd_bin._kick_power > 0) {
         data[5] |= 0x10;
@@ -59,9 +59,6 @@ bool  ScrambleSerializer::serialize(RobotCommand cmd, char* data)
     if (cmd_bin._kick_type == RobotCommand_Binary::CHIP) {
         data[5] |= 0x08;
     }
-    data[5] |= 0x04; // magic number for HEADER_2
-    // TODO : ChargerFlag, ErrFlag
-    data[5] |= 0x02;
 
     // TODO : Overflow err expression
     data[6] = 0x00;
@@ -69,12 +66,12 @@ bool  ScrambleSerializer::serialize(RobotCommand cmd, char* data)
     data[6] <<= 4;
     data[6] += cmd_bin._kick_power;
 
-    // Make checksum roots
-    /*data[8] = 0x00;
-    for (size_t i=2; i<8; i++) {
-        data[8] ^= data[i];
+    // Make checksum
+    /*data[7] = 0x00;
+    for (size_t i=2; i<7; i++) {
+        data[7] ^= data[i];
     }
-    data[9] = data[8] ^ 0xFF;*/
+    data[8] = data[7] ^ 0xFF;*/
 
     return  true;
 }
@@ -109,7 +106,7 @@ ScrambleSerializer::RobotCommand_Binary ScrambleSerializer::scalingToBinary(Robo
   }
 
   // Angular velocity
-  robot_command._omega = round(robot_command._omega * 128 / (2*M_PI)) + 127;
+  robot_command._omega = round(robot_command._omega * 128 / omega_max) + 127;
   if (robot_command._omega > 254) {
     command_binary._omega = 254;
   } else if (robot_command._omega < 0) {
