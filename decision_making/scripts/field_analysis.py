@@ -67,6 +67,7 @@ class FieldAnalysis(object):
 
     @classmethod
     def get_analyzed_area_num(cls):
+        from world_model import WorldModel
         #最もスコアの高いエリアを抽出
         most_area = 0
         xnum = 0
@@ -78,6 +79,20 @@ class FieldAnalysis(object):
                     xnum = i
                     ynum = j
         yaw = 0
+        ###########キックパワー調節############
+        ball_pose = WorldModel.get_pose("Ball")
+        dist = abs((xnum + ynum*1j) - (ball_pose.x + ball_pose.y*1j))#ボールと座標の距離を出す
+        
+        
+        power = 0.5 * dist #係数 * ボールの距離
+        if power > 8:    #最大powerが8
+            power = 8
+        if xnum == 9:    #座標がゴールの場合は全力でシュート！！
+            power = 8
+
+        WorldModel.commands['Role_1'].set_kick(power)
+        rospy.logerr(power)
+
         return xnum,ynum,yaw
 
     @classmethod
@@ -87,11 +102,11 @@ class FieldAnalysis(object):
         best_pos = Pose(0,0,0)
         
         i = 4 #X軸num とりあえず13に固定
-        for k in range(-6,7,1):#1,12
+        for k in range(-5,6,1):
             nearest_dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
             nearest_enemynum = 0
             #rospy.logerr(k)
-            for enemy_num in range(6):
+            for enemy_num in range(len(WorldModel.enemy_assignments)):
                 #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
                 enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
                 if enemy_pose is None:
@@ -102,16 +117,13 @@ class FieldAnalysis(object):
                 if nearest_dist > dist:
                     nearest_dist = dist
                     nearest_enemynum = enemy_num
-                    #rospy.logerr(nearest_Dist)
-                #rospy.logerr(nearest_enemynum)
-                #rospy.logerr(nearest_Dist)
             if best_dist <= nearest_dist:
                 best_dist = nearest_dist
                 best_pos = Pose(i,k,0)
                 rospy.logdebug("best distance %f"%(best_dist))
         
         #rospy.logerr(best_pos)
-        FieldAnalysis.write_area_score(best_pos.x, best_pos.y, 3)
+        FieldAnalysis.write_area_score(best_pos.x, best_pos.y,3)
         #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
         return None
 
@@ -120,8 +132,8 @@ class FieldAnalysis(object):
         from world_model import WorldModel
         i = 9#18
         for k in range(-1,1,1):#6,7
-            nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
-            for enemy_num in range(6):
+            nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ
+            for enemy_num in range(len(WorldModel.enemy_assignments)):
                 #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
                 enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
                 if enemy_pose is None:
