@@ -24,10 +24,10 @@ namespace GlobalInfo {
     std::vector<int> friendIDs;
     std::vector<int> enemyIDs;
     geometry_msgs::Point ballPoint;
-    geometry_msgs::Point friendUpperDefencePoint;
-    geometry_msgs::Point friendLowerDefencePoint;
-    geometry_msgs::Point enemyUpperDefencePoint;
-    geometry_msgs::Point enemyLowerDefencePoint;
+    //geometry_msgs::Point friendUpperDefencePoint;
+    //geometry_msgs::Point friendLowerDefencePoint;
+    //geometry_msgs::Point enemyUpperDefencePoint;
+    //geometry_msgs::Point enemyLowerDefencePoint;
 
     // Obstacle Avoidance Config
     struct ObstacleAvoidanceConfig{
@@ -35,9 +35,23 @@ namespace GlobalInfo {
         double avoidRange = 0.5;
         double startDetectionPos = 0.0;
         double avoidHysteresis = 0.18;
-        double detectDefenceRange = 0.6;
-        double avoidDefenceRange = 0.6;
+        //double detectDefenceRange = 0.6;
+        //double avoidDefenceRange = 0.6;
     };
+    struct DefenceAreaCircle {
+        geometry_msgs::Point pos;
+        double radius;
+        DefenceAreaCircle(double _radius, double _x, double _y) {
+            radius = _radius;
+            pos.x = _x;
+            pos.y = _y;
+        }
+        DefenceAreaCircle(double _radius, const geometry_msgs::Point& _pos) {
+            radius = _radius;
+            pos = _pos;
+        }
+    };
+    std::vector<DefenceAreaCircle> ourDefenceAreaCircles, theirDefenceAreaCircles;
 
     ObstacleAvoidanceConfig OAConfig;
 
@@ -75,15 +89,31 @@ namespace GlobalInfo {
     }
 
     void initDefencePoint(){
-        GlobalInfo::friendUpperDefencePoint.x = -4.0;
-        GlobalInfo::friendUpperDefencePoint.y = 0.5;
-        GlobalInfo::friendLowerDefencePoint.x = -4.0;
-        GlobalInfo::friendLowerDefencePoint.y = -0.5;
+        // GlobalInfo::friendUpperDefencePoint.x = -4.0;
+        // GlobalInfo::friendUpperDefencePoint.y = 0.5;
+        // GlobalInfo::friendLowerDefencePoint.x = -4.0;
+        // GlobalInfo::friendLowerDefencePoint.y = -0.5;
 
-        GlobalInfo::enemyUpperDefencePoint.x = 4.0;
-        GlobalInfo::enemyUpperDefencePoint.y = 0.5;
-        GlobalInfo::enemyLowerDefencePoint.x = 4.0;
-        GlobalInfo::enemyLowerDefencePoint.y = -0.5;
+        // GlobalInfo::enemyUpperDefencePoint.x = 4.0;
+        // GlobalInfo::enemyUpperDefencePoint.y = 0.5;
+        // GlobalInfo::enemyLowerDefencePoint.x = 4.0;
+        // GlobalInfo::enemyLowerDefencePoint.y = -0.5;
+        GlobalInfo::ourDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.6, - 6.0 + 0.6,  0.6));
+        GlobalInfo::ourDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.6, - 6.0 + 0.6, -0.6));
+        GlobalInfo::ourDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.6, - 6.0 + 0.6,  0.0));
+        GlobalInfo::ourDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.2, - 6.0 + 1.2 - 0.2,   1.2 - 0.2));
+        GlobalInfo::ourDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.2, - 6.0 + 1.2 - 0.2, -(1.2 - 0.2)));
+        GlobalInfo::ourDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.2, - 6.0 + 0.2,   1.0));
+        GlobalInfo::ourDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.2, - 6.0 + 0.2, - 1.0));
+
+
+        GlobalInfo::theirDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.6, 6.0 - 0.6,  0.6));
+        GlobalInfo::theirDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.6, 6.0 - 0.6, -0.6));
+        GlobalInfo::theirDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.6, 6.0 - 0.6,  0.0));
+        GlobalInfo::theirDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.2, 6.0 - 1.2 + 0.2,   1.2 - 0.2));
+        GlobalInfo::theirDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.2, 6.0 - 1.2 + 0.2, -(1.2 - 0.2)));
+        GlobalInfo::theirDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.2, 6.0 - 0.2,   1.0));
+        GlobalInfo::theirDefenceAreaCircles.emplace_back(DefenceAreaCircle(0.2, 6.0 - 0.2, - 1.0));
     }
 }
 
@@ -179,18 +209,14 @@ void ObstacleAvoidingPointGenerator::updateAvoidingPoint(){
     
     // ディフェンスエリア回避は任意
     if(mAIStatus.avoidDefenceArea){
-        parameter = detectObstacle(trans, GlobalInfo::friendUpperDefencePoint,
-                parameter, GlobalInfo::OAConfig.detectDefenceRange,
-                GlobalInfo::OAConfig.avoidDefenceRange);
-        parameter = detectObstacle(trans, GlobalInfo::friendLowerDefencePoint,
-                parameter, GlobalInfo::OAConfig.detectDefenceRange,
-                GlobalInfo::OAConfig.avoidDefenceRange);
-        parameter = detectObstacle(trans, GlobalInfo::enemyUpperDefencePoint,
-                parameter, GlobalInfo::OAConfig.detectDefenceRange,
-                GlobalInfo::OAConfig.avoidDefenceRange);
-        parameter = detectObstacle(trans, GlobalInfo::enemyLowerDefencePoint,
-                parameter, GlobalInfo::OAConfig.detectDefenceRange,
-                GlobalInfo::OAConfig.avoidDefenceRange);
+        for (auto&& circle : GlobalInfo::ourDefenceAreaCircles) {
+            parameter = detectObstacle(trans, circle.pos,
+                    parameter, circle.radius, circle.radius);
+        }
+        for (auto&& circle : GlobalInfo::theirDefenceAreaCircles) {
+            parameter = detectObstacle(trans, circle.pos,
+                    parameter, circle.radius, circle.radius);
+        }
     }
 
     // 横並びロボット回避位置を生成
@@ -218,14 +244,25 @@ void ObstacleAvoidingPointGenerator::updateAvoidingPoint(){
 
             // ディフェンスエリア回避は任意
             if(mAIStatus.avoidDefenceArea){
-                parameter = detectObstacleOverlap(trans, GlobalInfo::friendUpperDefencePoint,
-                        parameter, GlobalInfo::OAConfig.avoidDefenceRange);
-                parameter = detectObstacleOverlap(trans, GlobalInfo::friendLowerDefencePoint,
-                        parameter, GlobalInfo::OAConfig.avoidDefenceRange);
-                parameter = detectObstacleOverlap(trans, GlobalInfo::enemyUpperDefencePoint,
-                        parameter, GlobalInfo::OAConfig.avoidDefenceRange);
-                parameter = detectObstacleOverlap(trans, GlobalInfo::enemyLowerDefencePoint,
-                        parameter, GlobalInfo::OAConfig.avoidDefenceRange);
+                // parameter = detectObstacleOverlap(trans, GlobalInfo::friendUpperDefencePoint,
+                //         parameter, GlobalInfo::OAConfig.avoidDefenceRange);
+                // parameter = detectObstacleOverlap(trans, GlobalInfo::friendLowerDefencePoint,
+                //         parameter, GlobalInfo::OAConfig.avoidDefenceRange);
+                // parameter = detectObstacleOverlap(trans, GlobalInfo::enemyUpperDefencePoint,
+                //         parameter, GlobalInfo::OAConfig.avoidDefenceRange);
+                // parameter = detectObstacleOverlap(trans, GlobalInfo::enemyLowerDefencePoint,
+                //         parameter, GlobalInfo::OAConfig.avoidDefenceRange);
+                // OAParameter detectObstacleOverlap(const Transformation &trans,
+                //         const geometry_msgs::Point &point, const OAParameter &parameter,
+                //         double avoidRange = GlobalInfo::OAConfig.avoidRange);
+                for (auto&& circle : GlobalInfo::ourDefenceAreaCircles) {
+                    parameter = detectObstacleOverlap(trans, circle.pos,
+                            parameter, circle.radius);
+                }
+                for (auto&& circle : GlobalInfo::theirDefenceAreaCircles) {
+                    parameter = detectObstacleOverlap(trans, circle.pos,
+                            parameter, circle.radius);
+                }
             }
 
             // 回避位置がほとんど更新されなかったらループを抜ける
