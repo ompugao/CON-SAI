@@ -17,10 +17,10 @@ class FieldAnalysis(object):
 
 ################## 評価グリッド関係 ##########################
     #定数定義 
-    xgrid = 19 #X軸19分割、Y軸13分割
-    ygrid = 13 
-    FieldX = constants.FieldHalfX*2 #フィールド寸法
-    FieldY = constants.FieldHalfY*2 #フィールド寸法
+    xgrid = 25 #0.5間隔　X軸25分割、Y軸19分割
+    ygrid = 19 
+    FieldX = constants.FieldX #フィールド寸法
+    FieldY = constants.FieldY #フィールド寸法
 
     #変数定義
     #area_score = np.array([[0]*ygrid for i in range(xgrid)])
@@ -72,8 +72,8 @@ class FieldAnalysis(object):
         most_area = 0
         xnum = 0
         ynum = 0
-        for i in range(-9,10,1):
-            for j in range(-6,7,1):
+        for i in range(-12,13,1):
+            for j in range(-9,10,1):
                 if most_area < FieldAnalysis.read_area_score(i,j):
                     most_area = FieldAnalysis.read_area_score(i,j)
                     xnum = i
@@ -87,11 +87,11 @@ class FieldAnalysis(object):
         power = 0.5 * dist #係数 * ボールの距離
         if power > 8:    #最大powerが8
             power = 8
-        if xnum == 9:    #座標がゴールの場合は全力でシュート！！
+        if xnum == 12:    #座標がゴールの場合は全力でシュート！！
             power = 8
 
         WorldModel.commands['Role_1'].set_kick(power)
-        rospy.logerr(power)
+        #rospy.logerr(power)
 
         return xnum,ynum,yaw
 
@@ -101,7 +101,7 @@ class FieldAnalysis(object):
         best_dist = 0 #最も大きい値を入れたいので、初期値０
         best_pos = Pose(0,0,0)
         
-        i = 4 #X軸num とりあえず13に固定
+        i =  6#X軸num　相手フィールドの真ん中あたりに固定
         for k in range(-5,6,1):
             nearest_dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
             nearest_enemynum = 0
@@ -130,7 +130,7 @@ class FieldAnalysis(object):
     @classmethod
     def Score_Goal(cls):  #ボールとゴールの直線を評価して、敵がいなければシュート！
         from world_model import WorldModel
-        i = 9#18
+        i = 12#18
         for k in range(-1,1,1):#6,7
             nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ
             for enemy_num in range(len(WorldModel.enemy_assignments)):
