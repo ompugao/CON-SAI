@@ -61,7 +61,11 @@ class FieldAnalysis(object):
     def get_analysis_area_pose(cls,area): #エリアを指定して、その座標を返す
         x = FieldAnalysis.get_analyzed_area_num()[0]
         y = FieldAnalysis.get_analyzed_area_num()[1]
-        position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
+        if (x == 12)and(-1 <= y <= 1) :
+            position = Pose((x*0.4),(y*0.4),0)
+        else: 
+            position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
+
         yaw = 0
         return Pose(position.x, position.y,0)
 
@@ -113,7 +117,7 @@ class FieldAnalysis(object):
                     continue
                 c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
                 ball_pose = WorldModel.get_pose("Ball")
-                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*0.5)+(k*0.5)*1j))
+                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*0.4)+(k*0.4)*1j)) #ゴール端をシュート目標にしていたので、幅を0.4として修正
                 if nearest_dist > dist:
                     nearest_dist = dist
                     nearest_enemynum = enemy_num
