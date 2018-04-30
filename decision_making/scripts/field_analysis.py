@@ -62,7 +62,7 @@ class FieldAnalysis(object):
         x = FieldAnalysis.get_analyzed_area_num()[0]
         y = FieldAnalysis.get_analyzed_area_num()[1]
         if (x == 12)and(-1 <= y <= 1) :
-            position = Pose((x*0.4),(y*0.4),0)
+            position = Pose((x*0.5),(y*0.4),0) #ゴールポストギリギリを狙わないように修正
         else: 
             position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
 
@@ -70,9 +70,8 @@ class FieldAnalysis(object):
         return Pose(position.x, position.y,0)
 
     @classmethod
-    def get_analyzed_area_num(cls):
+    def get_analyzed_area_num(cls): #最もスコアの高いエリアを抽出
         from world_model import WorldModel
-        #最もスコアの高いエリアを抽出
         most_area = 0
         xnum = 0
         ynum = 0
@@ -85,17 +84,21 @@ class FieldAnalysis(object):
         yaw = 0
         ###########キックパワー調節############
         ball_pose = WorldModel.get_pose("Ball")
-        dist = abs((xnum + ynum*1j) - (ball_pose.x + ball_pose.y*1j))#ボールと座標の距離を出す
+        #dist = math.sqrt(abs((xnum + ynum*1j) - (ball_pose.x + ball_pose.y*1j)))#ボールと座標の距離を出す
+        dist = math.sqrt(pow(ball_pose.x-(xnum*0.5),2)+pow(ball_pose.y-(ynum*0.5),2))
         
-        
-        power = 0.5 * dist #係数 * ボールの距離
-        if power > 8:    #最大powerが8
-            power = 8
+        k_power = 0.417 #キックパワーのゲイン
+        b_power = 1.63 #キックパワーのバイアス
+        kick_power = (dist * k_power) + b_power
+        #kick_power = 0.5 * dist #係数 * ボールの距離
+        if kick_power > 8:    #最大powerが8
+            kick_power = 8
         if xnum == 12:    #座標がゴールの場合は全力でシュート！！
-            power = 8
-
-        WorldModel.commands['Role_1'].set_kick(power)
-        #rospy.logerr(power)
+            kick_power = 8
+        
+        WorldModel.commands['Role_1'].set_kick(kick_power)
+        rospy.logerr(kick_power)
+        rospy.logerr(dist)
 
         return xnum,ynum,yaw
 
@@ -106,7 +109,7 @@ class FieldAnalysis(object):
         best_pos = Pose(0,0,0)
         
         i =  6#X軸num　相手フィールドの真ん中あたりに固定
-        for k in range(-5,6,1):
+        for k in range(-6,7,1):
             nearest_dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
             nearest_enemynum = 0
             #rospy.logerr(k)
@@ -117,7 +120,7 @@ class FieldAnalysis(object):
                     continue
                 c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
                 ball_pose = WorldModel.get_pose("Ball")
-                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*0.4)+(k*0.4)*1j)) #ゴール端をシュート目標にしていたので、幅を0.4として修正
+                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*0.5)+(k*0.5)*1j)) 
                 if nearest_dist > dist:
                     nearest_dist = dist
                     nearest_enemynum = enemy_num
@@ -144,7 +147,7 @@ class FieldAnalysis(object):
                     continue
                 c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
                 ball_pose = WorldModel.get_pose('Ball')
-                Dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x+ball_pose.y*1j,(i*0.5)+(k*0.5)*1j))
+                Dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x+ball_pose.y*1j,(i*0.5)+(k*0.4)*1j)) #ゴール端をシュート目標にしていたので、幅を0.4として修正
                 if nearest_Dist >= Dist:
                     nearest_Dist = Dist
             if nearest_Dist > 0.2:
