@@ -37,7 +37,7 @@ class PlayOurCornerKick(Play):
                 )
 
         abort_cornerkick_play_x = 0.4 * constants.FieldHalfX
-        receive_field_separate_x = 0.86 * constants.FieldHalfX
+        receive_field_separate_x = 0.7 * constants.FieldHalfX
 
         self.roles[1].loop_enable = True
         self.roles[1].clear_behavior()
@@ -47,17 +47,17 @@ class PlayOurCornerKick(Play):
         l = Loop('loop', announce=False, iterations=-1)
         l.add_child(
                 TacticReceiveBallAtAndShoot('TacticReceiveBallAtAndShoot', self.roles[1].my_role, weakref.proxy(self.state), \
-                        Pose(2.0, 0.0, 0), \
+                        Pose(0.5 * constants.FieldHalfX, 0.0, 0), \
                         [abort_cornerkick_play_x, -constants.FieldHalfY, receive_field_separate_x, +constants.FieldHalfY])
                         )
         self.roles[1].behavior.add_child(l)
 
         if mode < 0:
-            role2_pose = Pose(3.7, 2.1, 0)
-            role2_receiving_area = [receive_field_separate_x, 0, constants.FieldHalfX, constants.FieldHalfY]
-        else:
-            role2_pose = Pose(3.7, -2.1, 0)
+            role2_pose = Pose(4.2, -1.5, 0)
             role2_receiving_area = [receive_field_separate_x, -constants.FieldHalfY, constants.FieldHalfX, 0]
+        else:
+            role2_pose = Pose(4.2, 1.5, 0)
+            role2_receiving_area = [receive_field_separate_x, 0, constants.FieldHalfX, constants.FieldHalfY]
 
         self.roles[2].loop_enable = True
         self.roles[2].clear_behavior()
@@ -67,11 +67,11 @@ class PlayOurCornerKick(Play):
                 )
 
         if mode < 0:
-            role3_pose = Pose(2.9, -0.6, 0)
-            role3_receiving_area = [receive_field_separate_x, -constants.FieldHalfY, constants.FieldHalfX, 0]
-        else:
-            role3_pose = Pose(2.9, 0.6, 0)
+            role3_pose = Pose(5.2, 2.3, 0)
             role3_receiving_area = [receive_field_separate_x, 0, constants.FieldHalfX, constants.FieldHalfY]
+        else:
+            role3_pose = Pose(5.2, -2.3, 0)
+            role3_receiving_area = [receive_field_separate_x, -constants.FieldHalfY, constants.FieldHalfX, 0]
 
         self.roles[3].loop_enable = True
         self.roles[3].clear_behavior()
