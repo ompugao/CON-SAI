@@ -9,6 +9,7 @@
 #include	<sys/socket.h>
 #include	<netinet/in.h>
 #include    <arpa/inet.h>
+#include    <boost/algorithm/clamp.hpp>
 
 class Sender
 {
@@ -100,11 +101,11 @@ public:
 
         ScrambleSerializer serializer;
 
-        float   vel_x  = msg->vel_surge,
-            vel_y = msg->vel_sway,
-            omega     = msg->omega,
-            kick_power= (msg->kick_speed_x > 0.0) ? 15 : 0,
-            dribble_power   = (msg->dribble_power > 0.0) ? 15 : 0;
+        float   vel_x     = msg->vel_surge,
+            vel_y         = msg->vel_sway,
+            omega         = msg->omega,
+            kick_power    = boost::algorithm::clamp(msg->kick_speed_x, 0.0, 15.0),
+            dribble_power = boost::algorithm::clamp(msg->dribble_power, 0.0, 15.0);
         RobotCommand::KickType  kick_type = (msg->kick_speed_z > 0.0) ? RobotCommand::CHIP : RobotCommand::STRAIGHT;
 
         RobotCommand cmd(mID_, vel_x, vel_y, omega, dribble_power, kick_power, kick_type);
