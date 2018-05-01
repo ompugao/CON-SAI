@@ -26,71 +26,71 @@ public:
         addr.sin_family = AF_INET;
         addr.sin_port = htons(12345);
 
-        /*if(id == 0)         addr.sin_addr.s_addr = inet_addr("192.168.11.10");
-        else if (id == 1)   addr.sin_addr.s_addr = inet_addr("192.168.11.11");
-        else if (id == 2)   addr.sin_addr.s_addr = inet_addr("192.168.11.12");
-        else if (id == 3)   addr.sin_addr.s_addr = inet_addr("192.168.11.13");
-        else if (id == 4)   addr.sin_addr.s_addr = inet_addr("192.168.11.14");
-        else if (id == 5)   addr.sin_addr.s_addr = inet_addr("192.168.11.15");
-        else if (id == 6)   addr.sin_addr.s_addr = inet_addr("192.168.11.16");
-        else if (id == 7)   addr.sin_addr.s_addr = inet_addr("192.168.11.17");
-        else if (id == 8)   addr.sin_addr.s_addr = inet_addr("192.168.11.18");
-        else if (id == 9)   addr.sin_addr.s_addr = inet_addr("192.168.11.19");
-        else if (id == 10)   addr.sin_addr.s_addr = inet_addr("192.168.11.20");
-        else if (id == 11)   addr.sin_addr.s_addr = inet_addr("192.168.11.21");
-        else                addr.sin_addr.s_addr = inet_addr("192.168.11.30");*/
+        /*if(id == 0)         addr.sin_addr.s_addr = inet_addr("192.168.15.10");
+        else if (id == 1)   addr.sin_addr.s_addr = inet_addr("192.168.15.11");
+        else if (id == 2)   addr.sin_addr.s_addr = inet_addr("192.168.15.12");
+        else if (id == 3)   addr.sin_addr.s_addr = inet_addr("192.168.15.13");
+        else if (id == 4)   addr.sin_addr.s_addr = inet_addr("192.168.15.14");
+        else if (id == 5)   addr.sin_addr.s_addr = inet_addr("192.168.15.15");
+        else if (id == 6)   addr.sin_addr.s_addr = inet_addr("192.168.15.16");
+        else if (id == 7)   addr.sin_addr.s_addr = inet_addr("192.168.15.17");
+        else if (id == 8)   addr.sin_addr.s_addr = inet_addr("192.168.15.18");
+        else if (id == 9)   addr.sin_addr.s_addr = inet_addr("192.168.15.19");
+        else if (id == 10)   addr.sin_addr.s_addr = inet_addr("192.168.15.20");
+        else if (id == 11)   addr.sin_addr.s_addr = inet_addr("192.168.15.21");
+        else                addr.sin_addr.s_addr = inet_addr("192.168.15.30");*/
 
         //for debug
         if(id == 0){
-        	addr.sin_addr.s_addr = inet_addr("192.168.11.10");
+        	addr.sin_addr.s_addr = inet_addr("192.168.15.10");
         	ROS_ERROR("Set ID_0 IPaddr");
         }
         else if (id == 1)  {
-            addr.sin_addr.s_addr = inet_addr("192.168.11.11");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.11");
             ROS_ERROR("Set ID_1 IPaddr");
         }
         else if (id == 2){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.12");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.12");
             ROS_ERROR("Set ID_2 IPaddr");
         }
         else if (id == 3){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.13");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.13");
             ROS_ERROR("Set ID_3 IPaddr");
         }
         else if (id == 4){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.14");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.14");
             ROS_ERROR("Set ID_4 IPaddr");
         }
         else if (id == 5){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.15");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.15");
             ROS_ERROR("Set ID_5 IPaddr");
         }
         else if (id == 6){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.16");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.16");
             ROS_ERROR("Set ID_6 IPaddr");
         }
         else if (id == 7){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.17");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.17");
             ROS_ERROR("Set ID_7 IPaddr");
         }
         else if (id == 8){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.18");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.18");
             ROS_ERROR("Set ID_8 IPaddr");
         }
         else if (id == 9){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.19");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.19");
             ROS_ERROR("Set ID_9 IPaddr");
         }
         else if (id == 10){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.20");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.20");
             ROS_ERROR("Set ID_10 IPaddr");
         }
         else if (id == 11){
-            addr.sin_addr.s_addr = inet_addr("192.168.11.21");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.21");
             ROS_ERROR("Set ID_11 IPaddr");
         }
         else{
-            addr.sin_addr.s_addr = inet_addr("192.168.11.30");
+            addr.sin_addr.s_addr = inet_addr("192.168.15.30");
             ROS_ERROR("Set ID_x IPaddr");
         }
 
@@ -110,8 +110,10 @@ public:
 
         RobotCommand cmd(mID_, vel_x, vel_y, omega, dribble_power, kick_power, kick_type);
 
-        char data[7];
+        char data[18];
         serializer.serialize(cmd, data);
+        if(mID_ == 0)
+	        ROS_ERROR("%d",data[2]);
 
         //for debug
         //if(mID_ == 0)
@@ -122,7 +124,7 @@ public:
         else if(mID_== 3) sendto(mSock, "ID3", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
         else if(mID_== 4) sendto(mSock, "ID4", 4, 0, (struct sockaddr *)&addr, sizeof(addr));
         else if(mID_== 5) sendto(mSock, "ID5", 4, 0, (struct sockaddr *)&addr, sizeof(addr));*/
-		sendto(mSock, data, 7, 0, (struct sockaddr *)&addr, sizeof(addr));
+		sendto(mSock, data, 18, 0, (struct sockaddr *)&addr, sizeof(addr));
         ROS_INFO("Send message");
     }
     /*void test_send(void){

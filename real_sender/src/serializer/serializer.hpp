@@ -13,8 +13,8 @@ public:
   };
 
   unsigned int  _id;
-  float _vel_x, _vel_y;  // -5.0 <= vx <= 5.0, -5.0 <= Vy <= 5.0 [m/s]
-  float _omega;                 // -2*M_PI <= omega <= 2*M_PI[rad/s]
+  float _vel_x, _vel_y;
+  float _omega;
   KickType _kick_type;
   float _dribble_power, _kick_power;  // 0 <= _dribble_power < 16, 0 <= _kick_power < 16
 
@@ -33,9 +33,6 @@ public:
 private:
   static const char  HEADER;
   static const int  NUM_DATA;
-  static const float Vx_max;
-  static const float Vy_max;
-  static const float omega_max;
 
 
   class RobotCommand_Binary
