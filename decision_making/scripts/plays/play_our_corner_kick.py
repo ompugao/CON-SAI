@@ -14,6 +14,7 @@ from tactics.tactic_halt import TacticHalt
 from pi_trees_lib.pi_trees_lib import Loop
 from consai_msgs.msg import Pose
 import constants
+import numpy as np
 
 import weakref
 
@@ -52,11 +53,13 @@ class PlayOurCornerKick(Play):
                         )
         self.roles[1].behavior.add_child(l)
 
+        def gen_noise():
+            return ((np.random.rand() - 0.5)*0.8)
         if mode < 0:
-            role2_pose = Pose(4.2, -1.5, 0)
+            role2_pose = Pose(4.2 + gen_noise(), -1.5 + gen_noise(), 0)
             role2_receiving_area = [receive_field_separate_x, -constants.FieldHalfY, constants.FieldHalfX, 0]
         else:
-            role2_pose = Pose(4.2, 1.5, 0)
+            role2_pose = Pose(4.2 + gen_noise(), 1.5 + gen_noise(), 0)
             role2_receiving_area = [receive_field_separate_x, 0, constants.FieldHalfX, constants.FieldHalfY]
 
         self.roles[2].loop_enable = True
@@ -67,10 +70,10 @@ class PlayOurCornerKick(Play):
                 )
 
         if mode < 0:
-            role3_pose = Pose(5.2, 2.3, 0)
+            role3_pose = Pose(5.2 + gen_noise(), 2.3 + gen_noise(), 0)
             role3_receiving_area = [receive_field_separate_x, 0, constants.FieldHalfX, constants.FieldHalfY]
         else:
-            role3_pose = Pose(5.2, -2.3, 0)
+            role3_pose = Pose(5.2 + gen_noise(), -2.3 + gen_noise(), 0)
             role3_receiving_area = [receive_field_separate_x, -constants.FieldHalfY, constants.FieldHalfX, 0]
 
         self.roles[3].loop_enable = True
