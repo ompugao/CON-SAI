@@ -61,6 +61,38 @@ class FieldAnalysis(object):
         if FieldAnalysis.dot(a-b, p-b) <= 0.0:
             return abs(p-b)
         return abs(FieldAnalysis.cross(b-a, p-a))/abs(b-a)
+
+    @classmethod
+    def cal_best_passposi(self,i,y1,y2): #xとy1~y2上の直線の中から、最も敵から遠いパスルートとなる座標選択
+        from world_model import WorldModel
+        best_dist = 0 #最も大きい値を入れたいので、初期値０
+        best_pos = Pose(0,0,0)
+
+        for k in range(y1,y2,1):
+            nearest_dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
+            nearest_enemynum = 0
+            #rospy.logerr(k)
+            
+            for enemy_num in range(len(WorldModel.enemy_assignments)):
+                #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
+                enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
+                if enemy_pose is None:
+                    continue
+                c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
+                ball_pose = WorldModel.get_pose("Ball")
+                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*0.5)+(k*0.5)*1j)) 
+                if nearest_dist > dist:
+                    nearest_dist = dist
+                    nearest_enemynum = enemy_num
+            if best_dist <= nearest_dist:
+                best_dist = nearest_dist
+                best_pos = Pose(i,k,0)
+                rospy.logdebug("best distance %f"%(best_dist))
+        
+        return best_pos,best_dist
+
+
+    
 ###############################################################
 
 ############################ 評価関係　　##############################
@@ -140,35 +172,53 @@ class FieldAnalysis(object):
         return xnum,ynum,yaw
 
     @classmethod
-    def Score_Easytopass(cls):  #パスがしやすいエリアを評価。 #相手フィールドX軸一定(X=) で、Y軸だけで評価。
+    def Score_Easytopass(cls,score):  #パスがしやすいエリアを評価。 #相手フィールドX軸一定(X=) で、Y軸だけで評価。
         from world_model import WorldModel
         best_dist = 0 #最も大きい値を入れたいので、初期値０
         best_pos = Pose(0,0,0)
         
-        i =  6#X軸num　相手フィールドの真ん中あたりに固定
-        for k in range(-6,7,1):
-            nearest_dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ。
-            nearest_enemynum = 0
-            #rospy.logerr(k)
-            for enemy_num in range(len(WorldModel.enemy_assignments)):
-                #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
-                enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
-                if enemy_pose is None:
-                    continue
-                c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
-                ball_pose = WorldModel.get_pose("Ball")
-                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*0.5)+(k*0.5)*1j)) 
-                if nearest_dist > dist:
-                    nearest_dist = dist
-                    nearest_enemynum = enemy_num
-            if best_dist <= nearest_dist:
-                best_dist = nearest_dist
-                best_pos = Pose(i,k,0)
-                rospy.logdebug("best distance %f"%(best_dist))
+        if score == 2:
+            x =  0  #X軸num
+            y1 = -6
+            y2 = 6
+            best_pos = FieldAnalysis.cal_best_passposi(x,y1,y2+1)[0]  
+            FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
+            FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
+        
+        elif score == 3:
+            x =  6  #X軸num
+            y1 = -6
+            y2 = 6
+            best_pos = FieldAnalysis.cal_best_passposi(x,y1,y2+1)[0]  
+            FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
+            FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
+        
+        if score == 4:
+            x =  10  #X軸num
+
+            pose_1=Pose(0,0,0)
+            pose_2=Pose(0,0,0)
+            dist_1=0
+            dist_2=0
+
+            #ゴール下側評価
+            y1 = -6
+            y2 = -3
+            pose_1,dist_1 = FieldAnalysis.cal_best_passposi(x,y1,y2+1)
+            #ゴール上側評価
+            y1 = 3
+            y2 = 6
+            pose_2,dist_2 = FieldAnalysis.cal_best_passposi(x,y1,y2+1)
+
+            if dist_1 > dist_2:
+                best_pos = pose_1
+            else :
+                best_pos = pose_2
+
+            FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
+            FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
         
         rospy.logerr(best_pos)
-        FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,3)
-        FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,3) #シュート位置も受け取り位置も同じ
         #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
         return None
 
@@ -209,5 +259,7 @@ class FieldAnalysis(object):
                 #rospy.logerr(j)
 
         ##################実施評価の選択###############
-        FieldAnalysis.Score_Easytopass()
+        FieldAnalysis.Score_Easytopass(2) #スコア2~4に当たる箇所のパス評価を行う。
+        FieldAnalysis.Score_Easytopass(3)
+        FieldAnalysis.Score_Easytopass(4)
         FieldAnalysis.Score_Goal()
