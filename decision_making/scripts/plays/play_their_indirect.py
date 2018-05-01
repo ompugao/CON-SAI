@@ -27,7 +27,13 @@ class PlayTheirIndirect(Play):
                     from_dist = 0.5)
                 )
 
-        for i in range(2,6):
+        self.roles[2].loop_enable = True
+        self.roles[2].behavior.add_child(
+                TacticInterpose('TacticInterpose', self.roles[2].my_role, 
+                    from_dist = 1.0)
+                )
+                
+        for i in range(3,6):
             x = -3.0
             y = 0.45 - 0.3*(i-2)
             theta = 0

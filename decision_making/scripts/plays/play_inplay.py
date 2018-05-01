@@ -1,10 +1,11 @@
-
+# -*- coding: utf-8 -*-
 from play_stop import PlayStop
 
 from tactics.tactic_inplay_shoot import TacticInplayShoot
 from tactics.tactic_interpose import TacticInterpose
 from tactics.tactic_keep import TacticKeep
 from tactics.tactic_intersection import TacticIntersection
+from tactics.tactic_interpose_receiver import TacticInterposeReceiver
 import constants
 
 from consai_msgs.msg import Pose
@@ -21,13 +22,11 @@ class PlayInPlay(PlayStop):
         self.roles[1].behavior.add_child(
                 TacticInplayShoot('TacticInplayShoot', self.roles[1].my_role)
                 )
-
+        
+        self.roles[2].clear_behavior() #これ追記したら動きました。(原因不明)
         self.roles[2].loop_enable = True
         self.roles[2].behavior.add_child(
-                TacticInterpose('TacticInterpose', self.roles[2].my_role, base="ANALY_PATH",
-                    to_dist = 0)
-                #TacticInterpose('TacticInterpose', self.roles[2].my_role,
-                    #to_dist = 0)
+                TacticInterposeReceiver('TacticInterposeReceiver', self.roles[2].my_role, base="ANALY_RECEIVE",to_dist = 0) #受け取る側のドリブラーをいじる。
                 )
 
         range_y = constants.FieldHalfY - 0.7
