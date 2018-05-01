@@ -1,14 +1,17 @@
 #!/usr/bin/env  python
-import  rospy
-import  tf
-import  socket
-import  grSim_Packet_pb2
-from    datetime import *
-import  time
+
+import rospy
+import tf
+import socket
+from datetime import *
+import time
 import math
 
-from    geometry_msgs.msg import Twist
-from    consai_msgs.msg import robot_commands
+from proto import grSim_Packet_pb2
+from geometry_msgs.msg import Twist
+from consai_msgs.msg import robot_commands
+from consai_msgs.msg import ReplaceBall
+from consai_msgs.msg import ReplaceRobot
 
 
 class Sender:
@@ -24,6 +27,14 @@ class Sender:
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+        # Replacement
+        self.team_side = rospy.get_param('team_side', 'left')
+        self.REVERSE = 1.0
+        self.REVERSE_ANGLE = 0.0
+        if self.team_side == 'right':
+            self.REVERSE = -1.0
+            self.REVERSE_ANGLE = -180
+
         # make subscribers
         self.subscribers = []
         for i in xrange(12):
@@ -35,8 +46,19 @@ class Sender:
                         self.sendCommands,
                         callback_args=i))
 
-    def sendCommands(self,data,id):
+        self.subscribers.append(
+                rospy.Subscriber(
+                    "replacement_ball",
+                    ReplaceBall,
+                    self.send_ball_replacement))
+        self.subscribers.append(
+                rospy.Subscriber(
+                    "replacement_robot",
+                    ReplaceRobot,
+                    self.send_robot_replacement))
 
+
+    def sendCommands(self,data,id):
         packet = grSim_Packet_pb2.grSim_Packet()
         now_time = (time.mktime(datetime.now().timetuple()))
         packet.commands.timestamp = now_time
@@ -70,6 +92,34 @@ class Sender:
 
         message = packet.SerializeToString()
         self.sock.sendto(message,(self.host,self.port))
+
+
+    def send_ball_replacement(self, data):
+        packet = grSim_Packet_pb2.grSim_Packet()
+
+        replace_ball = packet.replacement.ball
+        replace_ball.x = self.REVERSE * data.pos_x
+        replace_ball.y = self.REVERSE * data.pos_y
+        replace_ball.vx = self.REVERSE * data.vel_x
+        replace_ball.vy = self.REVERSE * data.vel_y
+
+        message = packet.SerializeToString()
+        self.sock.sendto(message,(self.host, self.port))
+
+
+    def send_robot_replacement(self, data):
+        packet = grSim_Packet_pb2.grSim_Packet()
+
+        replace_robot = packet.replacement.robots.add()
+        replace_robot.id = data.robot_id
+        replace_robot.yellowteam = data.is_yellow
+        replace_robot.x = self.REVERSE * data.pos_x
+        replace_robot.y = self.REVERSE * data.pos_y
+        replace_robot.dir = self.REVERSE_ANGLE + data.dir
+        replace_robot.turnon = data.turn_on
+
+        message = packet.SerializeToString()
+        self.sock.sendto(message,(self.host, self.port))
 
 
 if  __name__ == '__main__':

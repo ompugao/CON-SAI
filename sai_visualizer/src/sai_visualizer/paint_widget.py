@@ -6,27 +6,32 @@ import rospy
 import rospkg
 import tf
 import math
+import types
+import functools
 
 from qt_gui.plugin import Plugin
 from python_qt_binding import loadUi
 from python_qt_binding.QtCore import Qt, QPointF, QRectF
 from python_qt_binding import QT_BINDING_VERSION
+from python_qt_binding.QtGui import QPainter, QPen, QColor
+from python_qt_binding.QtGui import QMouseEvent
 g_PYQT_MAJOR_VERSION = int(QT_BINDING_VERSION.split('.')[0])
 if g_PYQT_MAJOR_VERSION == 4:
     from python_qt_binding.QtGui import QWidget
 elif g_PYQT_MAJOR_VERSION == 5:
     from python_qt_binding.QtWidgets import QWidget
-from python_qt_binding.QtGui import QPainter, QPen, QColor
 
 from nav_msgs.msg import Odometry
 from std_msgs.msg import UInt16MultiArray as UIntArray
 from geometry_msgs.msg import PoseStamped, TwistStamped
 from geometry_msgs.msg import Point
+from consai_msgs.msg import GeometryFieldSize, FieldLineSegment, FieldCircularArc
+from consai_msgs.msg import ReplaceBall, ReplaceRobot
+
+from geometry import Geometry
+
 
 # monkey patch
-import types
-import functools
-from python_qt_binding.QtGui import QMouseEvent
 def mouseevent_wrapper(func):
     if g_PYQT_MAJOR_VERSION == 5:
         @functools.wraps(func)
@@ -39,59 +44,74 @@ def mouseevent_wrapper(func):
     else:
         return func
 
+
 def wheelevent_wrapper(func):
     if g_PYQT_MAJOR_VERSION == 5:
         @functools.wraps(func)
         def wrapper(self, event):
             def _delta(self):
-                return self.angleDelta()
+                # in Qt4, eveet.delta() returns int value
+                # in Qt5, event.angleDelta() returns QPoint value
+                return self.angleDelta().y()
+
             event.delta = types.MethodType(_delta, event)
             return func(self, event)
         return wrapper
     else:
         return func
 
-class ConstWorld():
-    def __init__(self):
-        self.FIELD_HEIGHT = 7.4
-        self.FIELD_WIDTH = 10.4
-        self.FIELD_H_PER_W = self.FIELD_HEIGHT/self.FIELD_WIDTH
-        self.FIELD_W_PER_H = self.FIELD_WIDTH/self.FIELD_HEIGHT
-        self.FIELD_CENTER_RADIUS = 0.5
-        self.FIELD_DEFENCE_RADIUS = 1.0
-        self.FIELD_STREACH = 0.25
-        self.WALL_HEIGHT = self.FIELD_HEIGHT - 0.4 * 2.0
-        self.WALL_WIDTH = self.FIELD_WIDTH - 0.4 * 2.0
-        self.PLAY_FIELD_HEIGHT = 6.0
-        self.PLAY_FIELD_WIDTH = 9.0
-        self.GOAL_HEIGHT = 1.0
-        self.GOAL_WIDTH = 0.18
-        self.BALL_RADIUS = 0.043
-        self.ROBOT_RADIUS = 0.18 * 0.5
 
 class PaintWidget(QWidget):
     def __init__(self,parent=None):
         super(PaintWidget,self).__init__(parent)
 
-        self.CW = ConstWorld()
-        self.scaleOnField = 1.0
-        self.fieldHeight = 0.0
-        self.fieldWidth = 0.0
-        self.rotatingWorld = False
-        self.trans = QPointF(0.0,0.0) # 慢性的なトランス
+        # geometry parameters
+        self.geometry = Geometry()
+        self.scaleOnField   = 1.0
+        self.world_height   = 0.0
+        self.world_width    = 0.0
+        self.trans      = QPointF(0.0,0.0) # 慢性的なトランス
         self.mouseTrans = QPointF(0.0, 0.0) # マウス操作で発生する一時的なトランス
-        self.scale = QPointF(1.0,1.0)
+        self.scale      = QPointF(1.0,1.0)
         self.clickPoint = QPointF(0.0,0.0)
+        self._current_mouse_pos = QPointF(0.0,0.0)
 
+        # Colors
         self.friendDrawColor = Qt.cyan
         self.enemyDrawColor = Qt.yellow
         self.friend_color = rospy.get_param("friend_color", "blue")
         if self.friend_color != "blue":
             self.friendDrawColor = Qt.yellow
             self.enemyDrawColor = Qt.cyan
-
         self.targetPosDrawColor = QColor(102, 0, 255, 100)
+        self.avoidingPointDrawColor = QColor(255, 0, 0, 100)
 
+        # Replace
+        self._CLICK_POS_THRESHOLD = 0.1
+        self._CLICK_VEL_ANGLE_THRESHOLD = self._CLICK_POS_THRESHOLD + 0.1
+        self._VEL_GAIN = 3.0
+        self._VEL_MAX = 8.0
+        self._replace_func = None
+        self._replace_id = 0
+        self._replace_is_yellow = False
+        self._replace_is_friend = False
+
+        # Status
+        self._should_rotate_world = False
+        self._can_replace = False
+        self._is_ballpos_replacement = False
+        self._is_ballvel_replacement = False
+        self._is_robotpos_replacement = False
+        self._is_robotangle_replacement = False
+
+        # Configs
+        # This function enables mouse tracking without pressing mouse button
+        self.setMouseTracking(True)
+
+        # Subscribers
+        self.field_geometry = GeometryFieldSize()
+        self.sub_geometry = rospy.Subscriber("geometry_field_size",
+                GeometryFieldSize, self.callbackGeometry)
 
         self.ballOdom = Odometry()
         self.sub_ballPosition = rospy.Subscriber("ball_observer/estimation", 
@@ -148,57 +168,94 @@ class PaintWidget(QWidget):
                     rospy.Subscriber(topicAvoidingPoint, Point,
                         self.callbackAvoidingPoint, callback_args=i))
 
+        # Publishers
+        self._pub_replace_ball = rospy.Publisher(
+                'replacement_ball', ReplaceBall, queue_size=10)
+        self._pub_replace_robot = rospy.Publisher(
+                'replacement_robot', ReplaceRobot, queue_size=10)
+
+
+    def callbackGeometry(self, msg):
+        self.field_geometry = msg
+        self.geometry.set_field(
+                self.field_geometry.field_length, 
+                self.field_geometry.field_width)
+
+
     def callbackBallOdom(self, msg):
         self.ballOdom = msg
         # self.update()
+
 
     def callbackFriendsID(self, msg):
         self.friendsIDArray = msg
         # self.update()
 
+
     def callbackFriendOdom(self, msg, robot_id):
         self.friendOdoms[robot_id] = msg
+
 
     def callbackEnemiesID(self, msg):
         self.enemyIDArray = msg
 
+
     def callbackEnemiesOdom(self, msg, robot_id):
         self.enemyOdoms[robot_id] = msg
+
 
     def callbackTargetPosition(self, msg, robot_id):
         self.targetPositions[robot_id] = msg
         self.targetIsPosition[robot_id] = True
 
+
     def callbackTargetVelocity(self, msg, robot_id):
         self.targetVelocities[robot_id] = msg
         self.targetIsPosition[robot_id] = False
 
+
     def callbackAvoidingPoint(self, msg, robot_id):
         self.avoidingPoints[robot_id] = msg
+
 
     @mouseevent_wrapper
     def mousePressEvent(self, event):
         if event.buttons() == Qt.LeftButton:
             self.clickPoint = event.posF()
+
+            self._can_replace = self._isReplacementClick(self.clickPoint)
+
         elif event.buttons() == Qt.RightButton:
             self.resetPainterState()
 
         self.update()
 
+
     @mouseevent_wrapper
     def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
-            pos = event.posF()
-            self.mouseTrans = (pos - self.clickPoint) / self.scale.x()
+        self._current_mouse_pos = event.posF()
+
+        if self._can_replace :
+            pass
+        elif event.buttons() == Qt.LeftButton:
+                pos = event.posF()
+                self.mouseTrans = (pos - self.clickPoint) / self.scale.x()
 
         self.update()
+
 
     @mouseevent_wrapper
     def mouseReleaseEvent(self, event):
-        self.trans += self.mouseTrans
-        self.mouseTrans = QPointF(0.0, 0.0)
+        if self._can_replace:
+            self._can_replace = False
+            self._replace_func(event.posF())
+
+        else:
+            self.trans += self.mouseTrans
+            self.mouseTrans = QPointF(0.0, 0.0)
 
         self.update()
+
 
     @wheelevent_wrapper
     def wheelEvent(self, event):
@@ -218,7 +275,8 @@ class PaintWidget(QWidget):
 
     def resizeEvent(self, event):
         # widgetのサイズ変更によるイベント
-        self.updateDrawState()
+        self.resizeDrawWorld()
+
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -232,28 +290,39 @@ class PaintWidget(QWidget):
         painter.scale(self.scale.x(), self.scale.y())
         painter.translate(self.trans + self.mouseTrans)
 
-        if self.rotatingWorld == True:
+        if self._should_rotate_world == True:
             painter.rotate(-90)
 
 
         # これ以降に描きたいものを重ねていく
         self.drawField(painter)
         
-        self.drawTargets(painter)
-
         self.drawAvoidingPoints(painter)
+        self.drawTargets(painter)
 
         self.drawFriends(painter)
         self.drawEnemis(painter)
         self.drawBallVelocity(painter)
         self.drawBall(painter)
 
+        if self._is_ballpos_replacement or self._is_robotpos_replacement:
+            self.drawPosReplacement(painter)
+            self.drawCoordinateText(painter)
+        elif self._is_ballvel_replacement:
+            self.drawVelReplacement(painter)
+        elif self._is_robotangle_replacement:
+            self.drawAngleReplacement(painter)
+        else:
+            self.drawCoordinateText(painter)
+
+
     def resetPainterState(self):
-        self.trans = QPointF(1.0,1.0)
+        self.trans = QPointF(0.0,0.0)
         self.mouseTrans = QPointF(0.0, 0.0)
         self.scale = QPointF(1.0, 1.0)
 
-    def updateDrawState(self):
+
+    def resizeDrawWorld(self):
         # Widgetのサイズに合わせて、描くフィールドのサイズを変える
         # 描画の回転判断もしてくれるすぐれもの
 
@@ -261,26 +330,27 @@ class PaintWidget(QWidget):
         widgetWidth = float(self.width())
         w_per_h = widgetWidth/widgetHeight
 
-        if w_per_h >= self.CW.FIELD_W_PER_H:
+        if w_per_h >= self.geometry.WORLD_W_PER_H:
             # Widgetが横長のとき
-            self.fieldHeight = widgetHeight
-            self.fieldWidth = widgetHeight * self.CW.FIELD_W_PER_H
-            self.rotatingWorld = False
-        elif w_per_h <= self.CW.FIELD_H_PER_W:
+            self.world_height = widgetHeight
+            self.world_width = widgetHeight * self.geometry.WORLD_W_PER_H
+            self._should_rotate_world = False
+        elif w_per_h <= self.geometry.WORLD_H_PER_W:
             # Widgetが縦長のとき
-            self.fieldHeight = widgetWidth
-            self.fieldWidth = widgetWidth * self.CW.FIELD_W_PER_H
-            self.rotatingWorld = True
+            self.world_height = widgetWidth
+            self.world_width = widgetWidth * self.geometry.WORLD_W_PER_H
+            self._should_rotate_world = True
         else:
             # 描画回転にヒステリシス性をもたせる
-            if self.rotatingWorld == True:
-                self.fieldHeight = widgetHeight * self.CW.FIELD_H_PER_W
-                self.fieldWidth = widgetHeight
+            if self._should_rotate_world == True:
+                self.world_height = widgetHeight * self.geometry.WORLD_H_PER_W
+                self.world_width = widgetHeight
             else:
-                self.fieldHeight = widgetWidth * self.CW.FIELD_H_PER_W
-                self.fieldWidth = widgetWidth
+                self.world_height = widgetWidth * self.geometry.WORLD_H_PER_W
+                self.world_width = widgetWidth
 
-        self.scaleOnField = self.fieldWidth / self.CW.FIELD_WIDTH
+        self.scaleOnField = self.world_width / self.geometry.WORLD_WIDTH
+
 
     def convertToDrawWorld(self, x, y):
         drawX = x * self.scaleOnField
@@ -289,128 +359,238 @@ class PaintWidget(QWidget):
 
         return point
 
+
+    def convertToRealWorld(self, x, y):
+        x /= self.scale.x()
+        y /= self.scale.y()
+
+        x -= (self.trans.x() + self.mouseTrans.x())
+        y -= (self.trans.y() + self.mouseTrans.y()) 
+
+        x -= self.width() * 0.5 / self.scale.x()
+        y -= self.height() * 0.5 / self.scale.y()
+
+        if self._should_rotate_world:
+            x, y = -y, x
+
+        real_x = x / self.scaleOnField
+        real_y = -y / self.scaleOnField
+        point = QPointF(real_x, real_y)
+
+        return point
+
+    
+    def _isReplacementClick(self, mouse_pos):
+        real_pos = self.convertToRealWorld(mouse_pos.x(), mouse_pos.y())
+
+        is_clicked = True
+
+        result =  self._isBallClicked(real_pos)
+        if result == 'pos':
+            self._is_ballpos_replacement = True
+            self._replace_func = self._replaceBallPos
+        elif result == 'vel_angle':
+            self._is_ballvel_replacement = True
+            self._replace_func = self._replaceBallVel
+        else:
+            result, robot_id, is_friend = self._isRobotClicked(real_pos)
+            self._replace_id = robot_id
+            self._replace_is_friend = is_friend
+
+            if result == 'pos':
+                self._is_robotpos_replacement = True
+                self._replace_func = self._replaceRobotPos
+            elif result == 'vel_angle':
+                self._is_robotangle_replacement = True
+                self._replace_func = self._replaceRobotAngle
+            else:
+                is_clicked = False
+
+        return is_clicked
+
+        
+    def _isBallClicked(self, real_pos):
+        posX = self.ballOdom.pose.pose.position.x
+        posY = self.ballOdom.pose.pose.position.y
+        ball_pos = QPointF(posX, posY)
+
+        return self._isClicked(real_pos, ball_pos)
+
+
+    def _isRobotClicked(self, real_pos):
+        is_clicked = False
+        replace_id = 0
+        is_friend = False
+
+        for robot_id in self.friendsIDArray.data:
+            posX = self.friendOdoms[robot_id].pose.pose.position.x
+            posY = self.friendOdoms[robot_id].pose.pose.position.y
+            robot_pos = QPointF(posX, posY)
+
+            is_clicked = self._isClicked(real_pos, robot_pos)
+            if is_clicked:
+                is_friend = True
+                return is_clicked, robot_id, is_friend
+
+        for robot_id in self.enemyIDArray.data:
+            posX = self.enemyOdoms[robot_id].pose.pose.position.x
+            posY = self.enemyOdoms[robot_id].pose.pose.position.y
+            robot_pos = QPointF(posX, posY)
+
+            is_clicked = self._isClicked(real_pos, robot_pos)
+            if is_clicked:
+                is_friend = False
+                return is_clicked, robot_id, is_friend
+
+        return is_clicked, replace_id, is_friend
+
+
+    def _isClicked(self, real_pos1, real_pos2):
+        diff = real_pos1 - real_pos2
+        diff_size = math.hypot(diff.x(), diff.y())
+        if diff_size < self._CLICK_POS_THRESHOLD:
+            return "pos"
+        elif diff_size < self._CLICK_VEL_ANGLE_THRESHOLD:
+            return "vel_angle"
+
+        return False
+
+
+    def _replaceBallPos(self, mouse_pos):
+        real_pos = self.convertToRealWorld(mouse_pos.x(), mouse_pos.y())
+
+        replace = ReplaceBall()
+        replace.pos_x = real_pos.x()
+        replace.pos_y = real_pos.y()
+        self._pub_replace_ball.publish(replace)
+
+        self._is_ballpos_replacement = False
+
+
+    def _replaceBallVel(self, mouse_pos):
+        ballPos = self.ballOdom.pose.pose.position
+        ballPoint = QPointF(ballPos.x, ballPos.y)
+        currentPos = self.convertToRealWorld(
+                mouse_pos.x(), mouse_pos.y())
+
+        velocity = self._calcuReplaceVelocity(ballPoint, currentPos)
+
+        replace = ReplaceBall()
+        replace.pos_x = ballPoint.x()
+        replace.pos_y = ballPoint.y()
+        replace.vel_x = velocity.x()
+        replace.vel_y = velocity.y()
+        self._pub_replace_ball.publish(replace)
+
+        self._is_ballvel_replacement = False
+
+
+    def _replaceRobotPos(self, mouse_pos):
+        real_pos = self.convertToRealWorld(mouse_pos.x(), mouse_pos.y())
+
+        # euler <- (roll, pitch, yaw)
+        orientation = None
+        if self._replace_is_friend:
+            orientation = self.friendOdoms[self._replace_id].pose.pose.orientation
+        else:
+            orientation = self.enemyOdoms[self._replace_id].pose.pose.orientation
+        euler = self._to_euler(orientation)
+
+        is_yellow = True
+        if self._replace_is_friend and self.friend_color == 'blue':
+            is_yellow = False
+        elif not self._replace_is_friend and self.friend_color == 'yellow':
+            is_yellow = False
+            
+        replace = ReplaceRobot()
+        replace.robot_id = self._replace_id
+        replace.is_yellow = is_yellow
+        replace.pos_x = real_pos.x()
+        replace.pos_y = real_pos.y()
+        replace.dir = math.degrees(euler[2])
+        replace.turn_on = True
+        self._pub_replace_robot.publish(replace)
+
+        self._is_robotpos_replacement = False
+
+
+    def _replaceRobotAngle(self, mouse_pos):
+        real_pos = self.convertToRealWorld(mouse_pos.x(), mouse_pos.y())
+
+        robot_pos = QPointF()
+        if self._replace_is_friend:
+            robot_pos.setX(self.friendOdoms[self._replace_id].pose.pose.position.x)
+            robot_pos.setY(self.friendOdoms[self._replace_id].pose.pose.position.y)
+        else:
+            robot_pos.setX(self.enemyOdoms[self._replace_id].pose.pose.position.x)
+            robot_pos.setY(self.enemyOdoms[self._replace_id].pose.pose.position.y)
+
+        is_yellow = True
+        if self._replace_is_friend and self.friend_color == 'blue':
+            is_yellow = False
+        elif not self._replace_is_friend and self.friend_color == 'yellow':
+            is_yellow = False
+
+        replace = ReplaceRobot()
+        replace.robot_id = self._replace_id
+        replace.is_yellow = is_yellow
+        replace.pos_x = robot_pos.x()
+        replace.pos_y = robot_pos.y()
+        replace.dir = math.degrees(self._to_angle(robot_pos, real_pos))
+        replace.turn_on = True
+        self._pub_replace_robot.publish(replace)
+
+        self._is_robotangle_replacement = False
+
+
+    def _calcuReplaceVelocity(self, from_pos, to_pos):
+        diff = to_pos - from_pos
+        diff_size = math.hypot(diff.x(), diff.y())
+
+        velocity_size = diff_size * self._VEL_GAIN
+        if velocity_size > self._VEL_MAX:
+            velocity_size = self._VEL_MAX
+
+        angle = math.atan2(diff.y(), diff.x())
+        velocity = QPointF(
+                velocity_size * math.cos(angle),
+                velocity_size * math.sin(angle))
+
+        return velocity
+
+
     def drawField(self, painter):
         # draw green surface rectangle
         painter.setPen(Qt.black)
         painter.setBrush(Qt.green)
-
-        rx = -self.fieldWidth * 0.5
-        ry = -self.fieldHeight * 0.5
-
-        rect = QRectF(rx, ry, self.fieldWidth, self.fieldHeight)
-        painter.drawRect(rect)
-
-        # draw wall rectangle
-        painter.setPen(QPen(Qt.black,3))
-        painter.setBrush(Qt.NoBrush)
         
-        sizeX = self.CW.WALL_WIDTH * self.scaleOnField
-        sizeY = self.CW.WALL_HEIGHT * self.scaleOnField
-
-        rx = -sizeX * 0.5
-        ry = -sizeY * 0.5
-
-        rect = QRectF(rx, ry, sizeX, sizeY)
+        rx = -self.world_width * 0.5
+        ry = -self.world_height * 0.5
+        
+        rect = QRectF(rx, ry, self.world_width, self.world_height)
         painter.drawRect(rect)
 
-        # draw center circle
+        # draw white lines
         painter.setPen(QPen(Qt.white,2))
-        point = self.convertToDrawWorld(0.0, 0.0)
-        size = self.CW.FIELD_CENTER_RADIUS * self.scaleOnField
-        painter.drawEllipse(point, size, size)
 
-        # draw play field rectangle
-        sizeX = self.CW.PLAY_FIELD_WIDTH * self.scaleOnField
-        sizeY = self.CW.PLAY_FIELD_HEIGHT * self.scaleOnField
+        for line in self.field_geometry.field_lines:
+            p1 = self.convertToDrawWorld(line.p1_x, line.p1_y)
+            p2 = self.convertToDrawWorld(line.p2_x, line.p2_y)
+            painter.drawLine(p1, p2)
 
-        rx = -sizeX * 0.5
-        ry = -sizeY * 0.5
+        for arc in self.field_geometry.field_arcs:
+            top_left = self.convertToDrawWorld(
+                    arc.center_x - arc.radius, arc.center_y + arc.radius)
+            size = arc.radius * 2.0 * self.scaleOnField
 
-        rect = QRectF(rx, ry, sizeX, sizeY)
-        painter.drawRect(rect)
+            start_angle = math.degrees(arc.a1)
+            end_angle = math.degrees(arc.a2)
+            span_angle = end_angle - start_angle
 
-        # draw mid-line
-        point1 = self.convertToDrawWorld(-self.CW.PLAY_FIELD_WIDTH * 0.5, 0)
-        point2 = self.convertToDrawWorld(self.CW.PLAY_FIELD_WIDTH * 0.5, 0)
-
-        painter.drawLine(point1, point2)
-
-        # draw center line
-        point1 = self.convertToDrawWorld(0, self.CW.PLAY_FIELD_HEIGHT * 0.5)
-        point2 = self.convertToDrawWorld(0, -self.CW.PLAY_FIELD_HEIGHT * 0.5)
-
-        painter.drawLine(point1, point2)
-
-        # draw streach line
-        x = self.CW.PLAY_FIELD_WIDTH * 0.5 - self.CW.FIELD_DEFENCE_RADIUS
-        point1 = self.convertToDrawWorld(x, self.CW.FIELD_STREACH * 0.5)
-        point2 = self.convertToDrawWorld(x, -self.CW.FIELD_STREACH * 0.5)
-        painter.drawLine(point1, point2)
-
-        x *= -1.0
-        point1 = self.convertToDrawWorld(x, self.CW.FIELD_STREACH * 0.5)
-        point2 = self.convertToDrawWorld(x, -self.CW.FIELD_STREACH * 0.5)
-        painter.drawLine(point1, point2)
-
-        # draw defence arc
-        sizeX = self.CW.FIELD_DEFENCE_RADIUS * 2.0 * self.scaleOnField
-        sizeY = self.CW.FIELD_DEFENCE_RADIUS * 2.0 * self.scaleOnField
-
-        rx = self.CW.PLAY_FIELD_WIDTH * 0.5 - self.CW.FIELD_DEFENCE_RADIUS
-        ry = self.CW.FIELD_STREACH * 0.5 + self.CW.FIELD_DEFENCE_RADIUS
-        ry *= -1.0
-        rx *= self.scaleOnField
-        ry *= self.scaleOnField
-
-        rect = QRectF(rx, ry, sizeX, sizeY)
-        startAngle = 90 * 16
-        spanAngle = 90 * 16
-        painter.drawArc(rect, startAngle, spanAngle) # top right
-        
-        ry = self.CW.FIELD_STREACH * 0.5 - self.CW.FIELD_DEFENCE_RADIUS
-        ry *= self.scaleOnField
-        rect = QRectF(rx, ry, sizeX, sizeY)
-        startAngle = 180 * 16
-        spanAngle = 90 * 16
-        painter.drawArc(rect, startAngle, spanAngle) # bottom right
-
-
-        rx = -self.CW.PLAY_FIELD_WIDTH * 0.5 - self.CW.FIELD_DEFENCE_RADIUS
-        ry = self.CW.FIELD_STREACH * 0.5 + self.CW.FIELD_DEFENCE_RADIUS
-        ry *= -1.0
-        rx *= self.scaleOnField
-        ry *= self.scaleOnField
-
-        rect = QRectF(rx, ry, sizeX, sizeY)
-        startAngle = 0 * 16
-        spanAngle = 90 * 16
-        painter.drawArc(rect, startAngle, spanAngle) # top left
-
-        ry = self.CW.FIELD_STREACH * 0.5 - self.CW.FIELD_DEFENCE_RADIUS
-        ry *= self.scaleOnField
-
-        rect = QRectF(rx, ry, sizeX, sizeY)
-        startAngle = 270 * 16
-        spanAngle = 90 * 16
-        painter.drawArc(rect, startAngle, spanAngle) # bottom left
-
-        
-        # draw goal rectangle
-        sizeX = self.CW.GOAL_WIDTH * self.scaleOnField
-        sizeY = self.CW.GOAL_HEIGHT * self.scaleOnField
-
-        rx = self.CW.PLAY_FIELD_WIDTH * 0.5
-        ry = -self.CW.GOAL_HEIGHT * 0.5
-        rx *= self.scaleOnField
-        ry *= self.scaleOnField
-
-        rect = QRectF(rx, ry, sizeX, sizeY)
-        painter.drawRect(rect)
-
-        rx = -self.CW.PLAY_FIELD_WIDTH * 0.5 - self.CW.GOAL_WIDTH
-        rx *= self.scaleOnField
-        rect = QRectF(rx, ry, sizeX, sizeY)
-        painter.drawRect(rect)
+            # angle must be 1/16 degrees order
+            start_angle *= 16 
+            span_angle *= 16
+            painter.drawArc(top_left.x(), top_left.y(), size, size, start_angle, span_angle)
 
 
     def drawBall(self, painter):
@@ -418,11 +598,12 @@ class PaintWidget(QWidget):
         posY = self.ballOdom.pose.pose.position.y
 
         point = self.convertToDrawWorld(posX,posY)
-        size = self.CW.BALL_RADIUS * self.scaleOnField
+        size = self.geometry.BALL_RADIUS * self.scaleOnField
 
         painter.setPen(Qt.black)
         painter.setBrush(Qt.red)
         painter.drawEllipse(point, size, size)
+
 
     def drawBallVelocity(self, painter):
         ballPos = self.ballOdom.pose.pose.position
@@ -450,10 +631,12 @@ class PaintWidget(QWidget):
             self.drawRobot(painter, robot_id, 
                     self.friendOdoms[robot_id], self.friendDrawColor)
 
+
     def drawEnemis(self, painter):
         for robot_id in self.enemyIDArray.data:
             self.drawRobot(painter, robot_id,
                     self.enemyOdoms[robot_id], self.enemyDrawColor)
+
 
     def drawRobot(self, painter,robot_id, odom, color):
         # draw robot body on its position
@@ -461,7 +644,7 @@ class PaintWidget(QWidget):
         posY = odom.pose.pose.position.y
 
         point = self.convertToDrawWorld(posX, posY)
-        size = self.CW.ROBOT_RADIUS * self.scaleOnField
+        size = self.geometry.ROBOT_RADIUS * self.scaleOnField
 
         painter.setPen(Qt.black)
         painter.setBrush(color)
@@ -469,12 +652,10 @@ class PaintWidget(QWidget):
 
         # draw robot angle on its body
         orientation = odom.pose.pose.orientation
-        # euler_from_quaternion does not support geometry_msgs:Quaternion
-        euler = tf.transformations.euler_from_quaternion(
-                (orientation.x, orientation.y, orientation.z, orientation.w))
+        euler = self._to_euler(orientation)
         # euler <- (roll, pitch, yaw)
-        linePosX = self.CW.ROBOT_RADIUS * math.cos(euler[2])
-        linePosY = self.CW.ROBOT_RADIUS * math.sin(euler[2])
+        linePosX = self.geometry.ROBOT_RADIUS * math.cos(euler[2])
+        linePosY = self.geometry.ROBOT_RADIUS * math.sin(euler[2])
         linePoint = point + self.convertToDrawWorld(linePosX, linePosY)
         painter.drawLine(point, linePoint)
 
@@ -483,6 +664,7 @@ class PaintWidget(QWidget):
         textPosY = 0.15
         textPoint = point + self.convertToDrawWorld(textPosY, textPosY)
         painter.drawText(textPoint, str(robot_id))
+
 
     def drawTargets(self, painter):
         for robot_id in self.friendsIDArray.data:
@@ -493,12 +675,13 @@ class PaintWidget(QWidget):
                 self.drawTargetVelocity(painter,
                         robot_id, self.targetVelocities[robot_id])
 
+
     def drawTargetPosition(self, painter, robot_id, positionStamped):
         posX = positionStamped.pose.position.x
         posY = positionStamped.pose.position.y
 
         point = self.convertToDrawWorld(posX, posY)
-        size = self.CW.ROBOT_RADIUS * self.scaleOnField
+        size = self.geometry.ROBOT_RADIUS * self.scaleOnField
 
         painter.setPen(Qt.black)
         painter.setBrush(self.targetPosDrawColor)
@@ -509,8 +692,8 @@ class PaintWidget(QWidget):
         euler = tf.transformations.euler_from_quaternion(
                 (orientation.x, orientation.y, orientation.z, orientation.w))
         # euler <- (roll, pitch, yaw)
-        linePosX = self.CW.ROBOT_RADIUS * math.cos(euler[2])
-        linePosY = self.CW.ROBOT_RADIUS * math.sin(euler[2])
+        linePosX = self.geometry.ROBOT_RADIUS * math.cos(euler[2])
+        linePosY = self.geometry.ROBOT_RADIUS * math.sin(euler[2])
         linePoint = point + self.convertToDrawWorld(linePosX, linePosY)
         painter.drawLine(point, linePoint)
 
@@ -519,6 +702,7 @@ class PaintWidget(QWidget):
         textPosY = 0.15
         textPoint = point + self.convertToDrawWorld(textPosY, textPosY)
         painter.drawText(textPoint, str(robot_id))
+
 
     def drawTargetVelocity(self, painter, robot_id, twistStamped):
         odom = self.friendOdoms[robot_id]
@@ -540,16 +724,18 @@ class PaintWidget(QWidget):
         painter.setPen(Qt.red)
         painter.drawText(textPoint, text)
 
+
     def drawAvoidingPoints(self, painter):
         for robot_id in self.friendsIDArray.data:
             self.drawAvoidingPoint(painter, robot_id, self.avoidingPoints[robot_id])
 
+
     def drawAvoidingPoint(self, painter, robot_id, point):
         drawPoint = self.convertToDrawWorld(point.x, point.y)
-        size = self.CW.ROBOT_RADIUS * self.scaleOnField
+        size = self.geometry.ROBOT_RADIUS * self.scaleOnField
 
         painter.setPen(Qt.black)
-        painter.setBrush(Qt.red)
+        painter.setBrush(self.avoidingPointDrawColor)
         painter.drawEllipse(drawPoint, size, size)
 
         # draw robot_id on its head
@@ -557,3 +743,86 @@ class PaintWidget(QWidget):
         textPosY = 0.15
         textPoint = drawPoint + self.convertToDrawWorld(textPosY, textPosY)
         painter.drawText(textPoint, str(robot_id))
+
+    
+    def drawCoordinateText(self, painter):
+        mouse = self._current_mouse_pos
+        mouse = self.convertToRealWorld(mouse.x(), mouse.y())
+
+        text = "(" + str(round(mouse.x(),2)) + ", " + str(round(mouse.y(),2)) + ")"
+        draw_pos = self.convertToDrawWorld(mouse.x(), mouse.y())
+
+        painter.setPen(Qt.black)
+        painter.drawText(draw_pos, text)
+
+
+    def drawPosReplacement(self, painter):
+        startPos = self.convertToRealWorld(
+                self.clickPoint.x(), self.clickPoint.y())
+        currentPos = self.convertToRealWorld(
+                self._current_mouse_pos.x(), self._current_mouse_pos.y())
+
+        startPoint = self.convertToDrawWorld(startPos.x(), startPos.y())
+        currentPoint = self.convertToDrawWorld(currentPos.x(), currentPos.y())
+
+        painter.setPen(QPen(Qt.red,2))
+        painter.drawLine(startPoint, currentPoint)
+
+    
+    def drawVelReplacement(self, painter):
+        ball_odom = self.ballOdom.pose.pose.position
+        ball_pos = QPointF(ball_odom.x, ball_odom.y)
+        currentPos = self.convertToRealWorld(
+                self._current_mouse_pos.x(), self._current_mouse_pos.y())
+
+        velocity = self._calcuReplaceVelocity(ball_pos, currentPos)
+
+        ballPoint = self.convertToDrawWorld(ball_pos.x(), ball_pos.y())
+        currentPoint = self.convertToDrawWorld(currentPos.x(), currentPos.y())
+
+        painter.setPen(QPen(Qt.blue,2))
+        painter.drawLine(ballPoint, currentPoint)
+
+        text = "[" + str(round(velocity.x(),2)) + ", " + str(round(velocity.y(),2)) + "]"
+
+        painter.setPen(Qt.black)
+        painter.drawText(currentPoint, text)
+
+    
+    def drawAngleReplacement(self, painter):
+        robot_pos = QPointF()
+        if self._replace_is_friend:
+            robot_pos.setX(self.friendOdoms[self._replace_id].pose.pose.position.x)
+            robot_pos.setY(self.friendOdoms[self._replace_id].pose.pose.position.y)
+        else:
+            robot_pos.setX(self.enemyOdoms[self._replace_id].pose.pose.position.x)
+            robot_pos.setY(self.enemyOdoms[self._replace_id].pose.pose.position.y)
+
+        currentPos = self.convertToRealWorld(
+                self._current_mouse_pos.x(), self._current_mouse_pos.y())
+
+        angle = math.degrees(self._to_angle(robot_pos, currentPos))
+
+        robotPoint = self.convertToDrawWorld(robot_pos.x(), robot_pos.y())
+        currentPoint = self.convertToDrawWorld(currentPos.x(), currentPos.y())
+
+        painter.setPen(QPen(Qt.blue,2))
+        painter.drawLine(robotPoint, currentPoint)
+
+        text = "[" + str(round(angle,2)) + "]"
+
+        painter.setPen(Qt.black)
+        painter.drawText(currentPoint, text)
+
+
+    def _to_euler(self, orientation):
+        # euler_from_quaternion does not support geometry_msgs:Quaternion
+        euler = tf.transformations.euler_from_quaternion(
+                (orientation.x, orientation.y, orientation.z, orientation.w))
+        return euler
+
+
+    def _to_angle(self, from_pos, to_pos):
+        diff_pos = to_pos - from_pos
+
+        return math.atan2(diff_pos.y(), diff_pos.x())

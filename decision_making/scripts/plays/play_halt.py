@@ -10,7 +10,7 @@ class PlayHalt(Play):
         self.applicable = "HALT"
         self.done_aborted = "HALT"
 
-        for i in range(6):
-            self.roles[i].loop_enable = True
-            self.roles[i].behavior.add_child(
-                    TacticHalt("TacticHalt", self.roles[i].my_role))
+        for role in self.roles:
+            role.loop_enable = True
+            role.behavior.add_child(
+                    TacticHalt("TacticHalt", role.my_role))

@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   tf
   consai_msgs
+  control_toolbox
 )
 
 generate_dynamic_reconfigure_options(

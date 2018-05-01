@@ -24,13 +24,16 @@ class Observer(object):
         self._ball_is_in_our_defence = False
         self._ball_is_in_their_defence = False
         self._ball_is_moving = False
+        self._ball_kicked_speed = 1.0
 
+    def ball_has_kicked(self, velocity):
+        return tool.getLengthFromCenter(velocity) > self._ball_kicked_speed
 
     def ball_is_in_field(self, pose):
         fabs_x = math.fabs(pose.x)
         fabs_y = math.fabs(pose.y)
 
-        if self._ball_is_in_field == True:
+        if self._ball_is_in_field is True:
             if fabs_x > constants.FieldHalfX + self._hysteresis or \
                     fabs_y > constants.FieldHalfY + self._hysteresis:
                 self._ball_is_in_field = False
@@ -49,53 +52,57 @@ class Observer(object):
 
 
     def ball_is_moved(self, pose):
-        if tool.getSize(self._ball_initial_pose, pose) > self._moved_threshold:
+        if tool.getLength(self._ball_initial_pose, pose) > self._moved_threshold:
             self._ball_is_moved = True
 
         return self._ball_is_moved
         
 
     def ball_is_in_defence_area(self, pose, our_side=False):
-        target_upper = Pose()
-        target_lower = Pose()
         is_in_defence = False
 
         if our_side:
-            target_upper = constants.poses['CONST_OUR_GOAL_UPPER']
-            target_lower = constants.poses['CONST_OUR_GOAL_LOWER']
-            is_in_defence = self._ball_is_in_our_defence
-        else:
-            target_upper = constants.poses['CONST_THEIR_GOAL_UPPER']
-            target_lower = constants.poses['CONST_THEIR_GOAL_LOWER']
-            is_in_defence = self._ball_is_in_their_defence
-
-
-        if is_in_defence:
-            threshold = constants.DefenceLength + self._hysteresis
-
-            if tool.getSize(pose, target_upper) > threshold and \
-                    tool.getSize(pose, target_lower) > threshold:
-                is_in_defence = False
-
-        else:
-            threshold = constants.DefenceLength - self._hysteresis
-
-            if tool.getSize(pose, target_upper) < threshold or \
-                    tool.getSize(pose, target_lower) < threshold:
-                is_in_defence = True
-
-
-        if our_side:
+            is_in_defence = self._is_in_our_defence(pose, self._ball_is_in_our_defence)
             self._ball_is_in_our_defence = is_in_defence
         else:
+            is_in_defence = self._is_in_their_defence(pose, self._ball_is_in_their_defence)
             self._ball_is_in_their_defence = is_in_defence
-
 
         return is_in_defence
 
+    
+    def _is_in_our_defence(self, pose, is_in_defence):
+        target_x = pose.x
+        target_y = math.fabs(pose.y)
+        if is_in_defence:
+            target_x -= self._hysteresis
+            target_y -= self._hysteresis
+
+        if target_y < constants.PenaltyY and \
+            target_x < -constants.PenaltyX:
+
+            return True
+
+        return False
+
+
+    def _is_in_their_defence(self, pose, is_in_defence):
+        target_x = pose.x
+        target_y = math.fabs(pose.y)
+        if is_in_defence:
+            target_x += self._hysteresis
+            target_y -= self._hysteresis
+
+        if target_y < constants.PenaltyY and \
+            target_x > constants.PenaltyX:
+
+            return True
+
+        return False
+
 
     def ball_is_moving(self, velocity):
-        ball_speed = tool.getSizeFromCenter(velocity)
+        ball_speed = tool.getLengthFromCenter(velocity)
 
         if self._ball_is_moving == False and \
                 ball_speed > self._moving_speed_threshold + self._moving_speed_hysteresis:

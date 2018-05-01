@@ -8,7 +8,7 @@ sys.path.append(os.pardir)
 from coordinate import Coordinate
 
 class TacticInterpose(ParallelAll):
-    def __init__(self, name, my_role, base="CONST_OUR_GOAL", target="Ball", 
+    def __init__(self, name, my_role, base="CONST_OUR_GOAL", target="Ball",
             to_dist=None, from_dist=None):
         super(TacticInterpose, self).__init__(name)
 

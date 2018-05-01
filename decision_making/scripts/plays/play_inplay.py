@@ -1,14 +1,15 @@
 
-from play_base import Play
+from play_stop import PlayStop
 
+from tactics.tactic_inplay_shoot import TacticInplayShoot
+from tactics.tactic_interpose import TacticInterpose
 from tactics.tactic_keep import TacticKeep
 from tactics.tactic_intersection import TacticIntersection
-from tactics.tactic_interpose import TacticInterpose
-from tactics.tactic_inplay_shoot import TacticInplayShoot
-from consai_msgs.msg import Pose
 import constants
 
-class PlayInPlay(Play):
+from consai_msgs.msg import Pose
+
+class PlayInPlay(PlayStop):
     def __init__(self):
         super(PlayInPlay, self).__init__('PlayInPlay')
 
@@ -16,23 +17,17 @@ class PlayInPlay(Play):
         self.done_aborted = "IN_PLAY"
         self.assignment_type = "CLOSEST_BALL"
 
-        keep_x = -constants.FieldHalfX + constants.RobotRadius * 2.0
-        self.roles[0].loop_enable = True
-        self.roles[0].behavior.add_child(
-                TacticKeep('TacticKeep', self.roles[0].my_role, keep_x = keep_x,
-                    range_high = constants.GoalHalfSize,
-                    range_low = -constants.GoalHalfSize)
-                )
-
-        self.roles[1].loop_enable = True
+        self.roles[1].clear_behavior()
         self.roles[1].behavior.add_child(
                 TacticInplayShoot('TacticInplayShoot', self.roles[1].my_role)
                 )
 
         self.roles[2].loop_enable = True
         self.roles[2].behavior.add_child(
-                TacticInterpose('TacticInterpose', self.roles[2].my_role,
-                    to_dist = 1.5)
+                TacticInterpose('TacticInterpose', self.roles[2].my_role, base="ANALY_PATH",
+                    to_dist = 0)
+                #TacticInterpose('TacticInterpose', self.roles[2].my_role,
+                    #to_dist = 0)
                 )
 
         range_y = constants.FieldHalfY - 0.7

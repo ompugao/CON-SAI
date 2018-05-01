@@ -32,6 +32,39 @@ class NoNavigation(Task):
         return TaskStatus.RUNNING
 
 
+class NoBallAvoidance(Task):
+    def __init__(self, name, my_role):
+        super(NoBallAvoidance, self).__init__(name)
+
+        self._my_role = my_role
+
+    def run(self):
+        WorldModel.commands[self._my_role].avoid_ball = False
+
+
+class NoDefenceAreaAvoidance(Task):
+    def __init__(self, name, my_role):
+        super(NoDefenceAreaAvoidance, self).__init__(name)
+
+        self._my_role = my_role
+
+    def run(self):
+        WorldModel.commands[self._my_role].avoid_defence_area = False
+
+        return TaskStatus.RUNNING
+
+class WithDefenceAreaAvoidance(Task):
+    def __init__(self, name, my_role):
+        super(WithDefenceAreaAvoidance, self).__init__(name)
+
+        self._my_role = my_role
+
+    def run(self):
+        WorldModel.commands[self._my_role].avoid_defence_area = True
+
+        return TaskStatus.RUNNING
+
+
 class WithChip(Task):
     def __init__(self, name, my_role, kick_power=6.0):
         super(WithChip, self).__init__(name)
@@ -59,3 +92,16 @@ class WithDribble(Task):
 
         return TaskStatus.RUNNING
 
+class FlexibleKick(Task):
+    def __init__(self, name, my_role, kick_options_func):
+        super(FlexibleKick, self).__init__(name)
+
+        self._my_role = my_role
+        self._kick_options_func = kick_options_func
+
+
+    def run(self):
+        kick_power, chipkick = self._kick_options_func()
+        WorldModel.commands[self._my_role].set_kick(kick_power, chipkick)
+
+        return TaskStatus.RUNNING

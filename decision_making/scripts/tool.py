@@ -45,7 +45,7 @@ def getAngle(fromPose, toPose):
 
     return math.atan2(diffPose.y, diffPose.x)
 
-def getSize(fromPose, toPose):
+def getLength(fromPose, toPose):
     diffPose = Pose()
 
     diffPose.x = toPose.x - fromPose.x
@@ -53,7 +53,7 @@ def getSize(fromPose, toPose):
 
     return math.hypot(diffPose.x, diffPose.y)
 
-def getSizeFromCenter(pose):
+def getLengthFromCenter(pose):
     return math.hypot(pose.x, pose.y)
 
 def getAngleFromCenter(pose):

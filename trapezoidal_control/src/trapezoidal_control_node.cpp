@@ -3,6 +3,9 @@
 #include <dynamic_reconfigure/server.h>
 #include <trapezoidal_control/parameterConfig.h>
 #include <tf/transform_datatypes.h>
+#include <control_toolbox/pid.h>
+#include <boost/algorithm/clamp.hpp>
+#include <cmath>
 
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/Twist.h>
@@ -11,11 +14,16 @@
 #include <geometry_msgs/Point.h>
 #include <nav_msgs/Odometry.h>
 #include <consai_msgs/AIStatus.h>
+#include <iostream>
+#include <cstdio>
 
+double clamp(double val, const double & lo, const double & hi) {
+    return ((val < lo) ? lo : ((val > hi) ? hi : val));
+} 
 
 class Controller{
     public:
-        Controller();
+        Controller(const ros::NodeHandle& nh);
         void update();
         
         geometry_msgs::Twist getCommandVelocity();
@@ -49,19 +57,23 @@ class Controller{
         double mPrevRotation;
         double mAccRotation;
         double mMaxRotation;
+        double mDecRotationGain;
         double mRotationDirec;
         double mCentrifugalLimit;
+
+        control_toolbox::Pid mPid;
 
         void poseControl();
         geometry_msgs::Vector3 trapezoidalLinearControl(const geometry_msgs::Point &targetPos);
         geometry_msgs::Vector3 trapezoidalAngularControl();
+        geometry_msgs::Vector3 pidAngularControl();
         geometry_msgs::Twist velocityControl(const geometry_msgs::Twist &targetVel);
 
         double normalize(double angle);
         double yawFromQuaternion(geometry_msgs::Quaternion geoQ);
 };
 
-Controller::Controller()
+Controller::Controller(const ros::NodeHandle& nh)
     :mPeriod_(0.016){
 
     mIsVelocityControl = false;
@@ -75,8 +87,11 @@ Controller::Controller()
     mPrevRotation = 0.0;
     mAccRotation = 0.01;
     mMaxRotation = 2.0;
+    mDecRotationGain = 0.2;
     mRotationDirec = 1.0;
     mCentrifugalLimit = 0.01;
+
+    mPid.initPid(4.0, 0.0, 0.1, 100*mMaxRotation, -100*mMaxRotation, nh);
 }
 
 void Controller::update(){
@@ -119,7 +134,9 @@ void Controller::callbackReconfigure(trapezoidal_control::parameterConfig &confi
 
     mAccRotation = config.accRotation;
     mMaxRotation = config.maxRotation;
+    mDecRotationGain = config.decRotationGain;
     mCentrifugalLimit = config.centrifugalLimit;
+    mPid.setGains(4.0, 0.0, 0.1, 100*mMaxRotation, -100*mMaxRotation);
 }
 
 void Controller::callbackAIStatus(const consai_msgs::AIStatus& msg){
@@ -139,7 +156,8 @@ void Controller::poseControl(){
     mCommandVel.linear.x = cos(-realYaw)*linearVel.x - sin(-realYaw)*linearVel.y;
     mCommandVel.linear.y = sin(-realYaw)*linearVel.x + cos(-realYaw)*linearVel.y;
 
-    mCommandVel.angular = trapezoidalAngularControl();
+    //mCommandVel.angular = trapezoidalAngularControl();
+    mCommandVel.angular = pidAngularControl();
 }
 
 geometry_msgs::Vector3 Controller::trapezoidalLinearControl(const geometry_msgs::Point &targetPos){
@@ -206,6 +224,32 @@ geometry_msgs::Vector3 Controller::trapezoidalLinearControl(const geometry_msgs:
     return output;
 }
 
+geometry_msgs::Vector3 Controller::pidAngularControl() {
+    // ロボット角度と目標角度から回転角を求める
+    double targetYaw, realYaw;
+    targetYaw = yawFromQuaternion(mTargetPose.orientation);
+    realYaw = yawFromQuaternion(mRealPose.orientation);
+
+    double diffYaw = targetYaw - realYaw;
+    double cmd = mPid.computeCommand(diffYaw, ros::Duration(mPeriod_));
+
+    // double brakingYaw = 0.5 * (mPrevRotation/mAccRotation) * mPeriod_ * mPrevRotation + mDecRotationGain * realYaw;
+    double limitRotation = mMaxRotation;
+    double centrifugal = std::abs(mPrevSpeed * mPrevRotation);
+    if(centrifugal > mCentrifugalLimit){
+        limitRotation = mCentrifugalLimit / mPrevSpeed;
+    }
+    cmd = boost::algorithm::clamp(cmd, -limitRotation, limitRotation);
+    mPrevRotation = cmd;
+
+    geometry_msgs::Vector3 output;
+    output.x = 0.0;
+    output.y = 0.0;
+    output.z = mPrevRotation;
+
+    return output;
+}
+
 geometry_msgs::Vector3 Controller::trapezoidalAngularControl(){
     // ロボット角度と目標角度から回転角を求める
     double targetYaw, realYaw, diffYaw;
@@ -217,17 +261,21 @@ geometry_msgs::Vector3 Controller::trapezoidalAngularControl(){
     // 前回の回転方向と目標回転方向を比較する
     if(diffYaw * mRotationDirec < 0){
         // 1:逆方向なら減速する
+        // TODO 目標付近で目標を越えてしまった場合に対応する
         mPrevRotation -= mAccRotation;
 
         // 回転速度が小さくなったら回転方向を逆にする
         if(mPrevRotation < 0.1){
             mRotationDirec *= -1.0;
         }
+        //std::cout << ros::this_node::getNamespace() << " if   \t" << diffYaw << "\t" << 0.0 << "\t" << mRotationDirec << "\t" << mPrevRotation<< std::endl;
     }else{
         // 2:同方向なら通常制御
         // 一つ前の制御角速度とロボット角速度の大きさをもとに制動角を求める
+        double realSpeed = std::fabs(realYaw);
         double brakingYaw;
-        brakingYaw = 0.5 * (mPrevRotation/mAccRotation) * mPeriod_ * mPrevRotation;
+        brakingYaw = 0.5 * (mPrevRotation/mAccRotation) * mPeriod_ * mPrevRotation
+            + mDecRotationGain * realSpeed;
         
         // 1:回転角が制動角以上であれば加速する
         double targetRotation = mPrevRotation;
@@ -251,10 +299,12 @@ geometry_msgs::Vector3 Controller::trapezoidalAngularControl(){
             // 3:回転角が制動角以下であれば減速する
             targetRotation -= mAccRotation;
             if(targetRotation < 0){
-                targetRotation = 0.0;
+                targetRotation = 0.1;
             }
         }
         mPrevRotation = targetRotation;
+        //std::printf("%s then, diff: %.5f brake: %.5f lim: %.5f dir %.5f mprev %.5f\n", ros::this_node::getNamespace().c_str(), diffYaw, brakingYaw, limiRotation, mRotationDirec, mPrevRotation);
+        //std::fflush(stdout);
     }
 
     geometry_msgs::Vector3 output;
@@ -349,7 +399,7 @@ int main(int argc, char **argv){
     ros::NodeHandle nh;
     ros::Rate r(60);
 
-    Controller controller;
+    Controller controller(nh);
     ros::Subscriber subTargetPose = nh.subscribe("move_base_simple/goal",100,
             &Controller::callbackTargetPose, &controller);
     ros::Subscriber subTargetVel = nh.subscribe("move_base_simple/target_velocity",
