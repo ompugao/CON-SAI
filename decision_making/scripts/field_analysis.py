@@ -211,7 +211,7 @@ class FieldAnalysis(object):
             FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
             FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
         
-        #rospy.logerr(best_pos)
+        rospy.logdebug('best_pos x: %f, y: %f, theta %f'%(best_pos.x, best_pos.y, best_pos.theta))
         #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
         return None
 
