@@ -6,6 +6,7 @@ from tactics.tactic_mark import TacticMark
 from tactics.tactic_inplay_shoot import TacticInplayShoot
 from tactics.tactic_interpose import TacticInterpose
 from tactics.tactic_keep import TacticKeep
+from tactics.tactic_goalie import TacticGoalie
 from tactics.tactic_intersection import TacticIntersection
 from tactics.tactic_interpose_receiver import TacticInterposeReceiver
 from tactics.tactic_mark import TacticMark
@@ -23,7 +24,7 @@ class PlayInPlay(Play):
         self.assignment_type = "CLOSEST_BALL"
 
         self.roles[0].clear_behavior()
-        self.roles[0].behavior.add_child(TacticKeep('TacticKeep', self.roles[0].my_role))
+        self.roles[0].behavior.add_child(TacticGoalie('TacticGoalie', self.roles[0].my_role))
 
         self.roles[1].clear_behavior()
         self.roles[1].behavior.add_child(
