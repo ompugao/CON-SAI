@@ -372,7 +372,7 @@ class WorldModel(object):
                         target = WorldModel.get_pose('Ball') 
                     # rospy.logerr('nv s straight') 
                 else:#横からシュート（打ち分けがきかない） 
-                    base = WorldModel.get_pose('CONST_OUR_GOAL') 
+                    base = AnglePoint
                     target = WorldModel.get_pose('Ball') 
                     # rospy.logerr('nv s side') 
                     # p1=Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y+1,0) 
