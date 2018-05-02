@@ -295,7 +295,7 @@ class WorldModel(object):
             VelPoint = Pose(VelPointX, VelPointY, 0) 
             #速度拡大線とゴールの距離を計算 
             GoalDist = WorldModel.dotLineDist(WorldModel.get_pose('CONST_OUR_GOAL').x+WorldModel.get_pose('CONST_OUR_GOAL').y*1j,(WorldModel.get_pose('Ball').x+WorldModel.get_pose('Ball').y*1j,VelPoint.x+VelPoint.y*1j)) 
-            if GoalDist <= constants.GoalHalfSize + 0.1:#シュートっぽい 
+            if GoalDist <= constants.GoalHalfSize + 0.3:#シュートっぽい 
                 base = VelPoint 
                 target = WorldModel.get_pose('Ball') 
                 # rospy.logerr(' v s') 
@@ -305,7 +305,7 @@ class WorldModel(object):
                 ballNearVectorR = WorldModel.dot(ballVelVector.x+ballVelVector.y*1j,ballKeepVector.x+ballKeepVector.y*1j)/(pow(ballVelVector.x,2)+pow(ballVelVector.y,2)) 
                 ballNearVectorX = ballNearVectorR*ballVelVector.x 
                 ballNearVectorY = ballNearVectorR*ballVelVector.y 
-                if ballNearVectorX+WorldModel.get_pose('Ball').x > -constants.FieldHalfX + constants.RobotRadius and abs(ballNearVectorY+WorldModel.get_pose('Ball').y)<constants.GoalHalfSize: 
+                if ballNearVectorX+WorldModel.get_pose('Ball').x > -constants.FieldHalfX + constants.RobotRadius and abs(ballNearVectorY+WorldModel.get_pose('Ball').y)<constants.GoalHalfSize and abs(WorldModel.get_pose('Role_0').y)< constants.GoalHalfSize: 
                     p1 = Pose(WorldModel.get_pose('Ball').x+ballNearVectorR*ballVelVector.x,WorldModel.get_pose('Ball').y+ballNearVectorR*ballVelVector.y+0.1,0) 
                     p2 = Pose(WorldModel.get_pose('Ball').x+ballNearVectorR*ballVelVector.x,WorldModel.get_pose('Ball').y+ballNearVectorR*ballVelVector.y-0.1,0) 
                 # p1=Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y+1,0) 
@@ -323,10 +323,8 @@ class WorldModel(object):
                 # rospy.logerr(' v p '+str(WorldModel.get_velocity('Ball'))) 
         else:#ボールに速度がない 
             #脅威マシンの角度と角速度を計算 
-            angleOfEnemy = WorldModel.get_pose('Threat_0').theta#敵なので反転np.pi- 
-            # if angleOfEnemy>np.pi: 
-            #     angleOfEnemy=angleOfEnemy-np.pi*2 
-            angleSpeedOfEnemy = WorldModel.get_velocity('Threat_0').theta#- 
+            angleOfEnemy = WorldModel.get_pose('Threat_0').theta
+            angleSpeedOfEnemy = WorldModel.get_velocity('Threat_0').theta
             #脅威マシンとゴールのなす角を計算 
             angleOfEnemyToGoal =  math.atan2(WorldModel.get_pose('CONST_OUR_GOAL').y-WorldModel.get_pose('Threat_0').y, WorldModel.get_pose('CONST_OUR_GOAL').x-WorldModel.get_pose('Threat_0').x) 
             #脅威マシンとボールのなす角を計算 
@@ -345,7 +343,7 @@ class WorldModel(object):
                 if abs(angleOfEnemyToGoal)<2.5:#正面からシュート（打ち分けがきく） 
                     d=66 
                     r=90 
-                    angleOfCanShoot = math.acos(d/r) 
+                    angleOfCanShoot = math.acos(d/r) *3/4#正面のシュート領域の中央から3/4いないで撃ってくる想定
                     if angleOfEnemyToGoal<angleOfEnemy and angleOfEnemy<angleOfEnemyToBall:
                         base = AnglePoint 
                         target = WorldModel.get_pose('Ball') 

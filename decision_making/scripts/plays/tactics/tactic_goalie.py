@@ -14,8 +14,8 @@ class TacticGoalie(ParallelAll):
         super(TacticGoalie, self).__init__(name)
 
         self._coordinate = Coordinate()
-        pose1 = Pose(keep_x, -(constants.GoalHalfSize - constants.RobotRadius), 0)
-        pose2 = Pose(keep_x, (constants.GoalHalfSize - constants.RobotRadius), 0)
+        pose1 = Pose(-constants.FieldHalfX + constants.RobotRadius * 2.0, -(constants.GoalHalfSize - constants.RobotRadius), 0)
+        pose2 = Pose(-constants.FieldHalfX + constants.RobotRadius * 2.0, (constants.GoalHalfSize - constants.RobotRadius), 0)
         self._coordinate.set_intersection(base='KeepBase', target='KeepTarget',pose1=WorldModel.get_pose('KeepP1'), pose2=WorldModel.get_pose('KeepP2'))
 
         self.add_child(DynamicDrive('DynamicDrive', my_role, self._coordinate,
