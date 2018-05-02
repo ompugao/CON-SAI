@@ -107,13 +107,6 @@ class FieldAnalysis(object):
             else: #パス時
                 position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
 
-                ###########敵側フィールドにいるにもかかわらず、味方側へパスをしてしまう現象への対策##############
-                ballgoal_dist = abs(12*0.5 - WorldModel.get_pose('Ball').x) #ボールの相手ゴールとの距離
-                areagoal_dist = abs(12*0.5 - position.x*0.5) #評価エリアの相手ゴールとの距離
-                if ballgoal_dist < areagoal_dist:
-                    position = Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y+0.5,0) #パス位置をボールの位置のちょっと↑。つまり、後ろにはパスしない事になる。
-                ###########################################################################################################
-
         elif area == 'RECEIVE':
             x = FieldAnalysis.get_analyzed_area_num(area)[0]
             y = FieldAnalysis.get_analyzed_area_num(area)[1]
