@@ -11,7 +11,7 @@ class TacticMark(ParallelAll):
     def __init__(self, name, my_role, base, target, from_dist=0.5):
         super(TacticMark, self).__init__(name)
 
-        self._coordinate = Coordinate(True)
+        self._coordinate = Coordinate()
 
         self._coordinate.set_interpose(base=base,target=target, from_dist = from_dist)
         self.add_child(DynamicDrive('DynamicDrive', my_role, self._coordinate,

@@ -13,7 +13,7 @@ class TacticKeep(ParallelAll):
             keep_y=None, range_high=10.0, range_low=-10.0):
         super(TacticKeep, self).__init__(name)
 
-        self._coordinate = Coordinate(True)
+        self._coordinate = Coordinate()
         # if keep_x:
         #     self._coordinate.set_keep_x(keep_x=keep_x, target=target, 
         #             range_y_high=range_high, range_y_low=range_low)
