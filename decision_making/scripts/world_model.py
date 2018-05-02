@@ -346,7 +346,13 @@ class WorldModel(object):
                     d=66 
                     r=90 
                     angleOfCanShoot = math.acos(d/r) 
-                    if angleOfEnemyToBall < angleOfEnemy - angleOfCanShoot: 
+                    if angleOfEnemyToGoal<angleOfEnemy and angleOfEnemy<angleOfEnemyToBall:
+                        base = WorldModel.get_pose('CONST_OUR_GOAL') 
+                        target = WorldModel.get_pose('Ball') 
+                    elif angleOfEnemyToGoal>angleOfEnemy and angleOfEnemy>angleOfEnemyToBall:
+                        base = WorldModel.get_pose('CONST_OUR_GOAL') 
+                        target = WorldModel.get_pose('Ball') 
+                    elif angleOfEnemyToBall < angleOfEnemy - angleOfCanShoot: 
                         angleOfShoot = angleOfEnemyToBall + angleOfCanShoot 
                         ShootAnglePointX = Length * math.cos(angleOfShoot) + WorldModel.get_pose('Ball').x 
                         ShootAnglePointY = Length * math.sin(angleOfShoot) + WorldModel.get_pose('Ball').y 
