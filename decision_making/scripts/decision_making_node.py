@@ -55,6 +55,22 @@ def publish():
             pubs_ai_status[robot_id].publish(status)
 
             command.reset_adjustments()
+    if best_passing_pose_publisher is not None:
+        if WorldModel._last_best_passing_pose is not None:
+            pose_stamped = PoseStamped()
+            pose_stamped.pose.position.x = WorldModel._last_best_passing_pose.x
+            pose_stamped.pose.position.y = WorldModel._last_best_passing_pose.y
+            pose_stamped.header.stamp = rospy.Time.now()
+            best_passing_pose_publisher.publish(pose_stamped)
+
+    if best_receiving_pose_publisher is not None:
+        if WorldModel._last_best_receiving_pose is not None:
+            pose_stamped = PoseStamped()
+            pose_stamped.pose.position.x = WorldModel._last_best_receiving_pose.x
+            pose_stamped.pose.position.y = WorldModel._last_best_receiving_pose.y
+            pose_stamped.header.stamp = rospy.Time.now()
+            best_receiving_pose_publisher.publish(pose_stamped)
+
 
 
 def friendIDCallback(msg):
@@ -135,6 +151,13 @@ if __name__ == '__main__':
     subs_enemy_odom = []
     sub_test_name = rospy.Subscriber('test_name', String, callback_test_name)
     sub_geometry = rospy.Subscriber('geometry_field_size', GeometryFieldSize, callback_geometry)
+    b_debug_publishing = rospy.get_param('~debug_publishing', False)
+    best_passing_pose_publisher = None
+    best_receiving_pose_publisher = None
+
+    if b_debug_publishing:
+        best_passing_pose_publisher = rospy.Publisher('best_passing_pose', PoseStamped, queue_size=10)
+        best_receiving_pose_publisher = rospy.Publisher('best_receiving_pose', PoseStamped, queue_size=10)
 
     for robot_id in xrange(12):
         id_str = str(robot_id)

@@ -115,6 +115,9 @@ class WorldModel(object):
             SSL_Referee.TIMEOUT_YELLOW : 'OUR_TIMEOUT'}
     _refbox_dict = _refbox_dict_blue
 
+    _last_best_passing_pose = None
+    _last_best_receiving_pose = None
+
     _observer = Observer()
 
     _ball_closest_frined_role = None
@@ -536,9 +539,11 @@ class WorldModel(object):
         elif name[:5] == 'ANALY':#評価したエリアの座標
             if name == 'ANALY_PATH': #パスをシュートする
                 pose = FieldAnalysis.get_best_passing_pose()
+                WorldModel._last_best_passing_pose = pose
             #rospy.logerr(pose)
             if name == 'ANALY_RECEIVE': #パスを受け取る
                 pose = FieldAnalysis.get_best_receiving_pose()
+                WorldModel._last_best_receiving_pose = pose
 
 
         #rospy.logerr(WorldModel.get_friend_pose(1))

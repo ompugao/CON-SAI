@@ -76,6 +76,9 @@ class PaintWidget(QWidget):
         self.clickPoint = QPointF(0.0,0.0)
         self._current_mouse_pos = QPointF(0.0,0.0)
 
+        self.best_receiving_pose = None
+        self.best_passing_pose = None
+
         # Colors
         self.friendDrawColor = Qt.cyan
         self.enemyDrawColor = Qt.yellow
@@ -85,6 +88,8 @@ class PaintWidget(QWidget):
             self.enemyDrawColor = Qt.cyan
         self.targetPosDrawColor = QColor(102, 0, 255, 100)
         self.avoidingPointDrawColor = QColor(255, 0, 0, 100)
+        self.bestPassingPointDrawColor = QColor(253, 0, 234, 100)
+        self.bestReceivingPointDrawColor = QColor(66, 35, 222, 100)
 
         # Replace
         self._CLICK_POS_THRESHOLD = 0.1
@@ -167,6 +172,8 @@ class PaintWidget(QWidget):
             self.sub_avoidingPoints.append(
                     rospy.Subscriber(topicAvoidingPoint, Point,
                         self.callbackAvoidingPoint, callback_args=i))
+        self.sub_best_passing_pose = rospy.Subscriber('best_passing_pose', PoseStamped, self.callbackBestPassingPose)
+        self.sub_best_receiving_pose = rospy.Subscriber('best_receiving_pose', PoseStamped, self.callbackBestReceivingPose)
 
         # Publishers
         self._pub_replace_ball = rospy.Publisher(
@@ -216,6 +223,12 @@ class PaintWidget(QWidget):
 
     def callbackAvoidingPoint(self, msg, robot_id):
         self.avoidingPoints[robot_id] = msg
+
+    def callbackBestReceivingPose(self, msg):
+        self.best_receiving_pose = msg.pose
+
+    def callbackBestPassingPose(self, msg):
+        self.best_passing_pose = msg.pose
 
 
     @mouseevent_wrapper
@@ -304,6 +317,10 @@ class PaintWidget(QWidget):
         self.drawEnemis(painter)
         self.drawBallVelocity(painter)
         self.drawBall(painter)
+        if self.best_passing_pose is not None:
+            self.drawPoint(painter, self.best_passing_pose.position, self.bestPassingPointDrawColor, text = 'passto')
+        if self.best_receiving_pose is not None:
+            self.drawPoint(painter, self.best_receiving_pose.position, self.bestReceivingPointDrawColor, text = 'receive here')
 
         if self._is_ballpos_replacement or self._is_robotpos_replacement:
             self.drawPosReplacement(painter)
@@ -729,6 +746,21 @@ class PaintWidget(QWidget):
         for robot_id in self.friendsIDArray.data:
             self.drawAvoidingPoint(painter, robot_id, self.avoidingPoints[robot_id])
 
+
+    def drawPoint(self, painter, point, color, text = None):
+        drawPoint = self.convertToDrawWorld(point.x, point.y)
+        size = self.geometry.ROBOT_RADIUS * self.scaleOnField * 2
+
+        painter.setPen(Qt.black)
+        painter.setBrush(color)
+        painter.drawEllipse(drawPoint, size, size)
+
+        if text is not None:
+            # draw robot_id on its head
+            textPosX = 0.15
+            textPosY = 0.15
+            textPoint = drawPoint + self.convertToDrawWorld(textPosY, textPosY)
+            painter.drawText(textPoint, text)
 
     def drawAvoidingPoint(self, painter, robot_id, point):
         drawPoint = self.convertToDrawWorld(point.x, point.y)
