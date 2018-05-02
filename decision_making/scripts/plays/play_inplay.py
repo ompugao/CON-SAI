@@ -38,32 +38,24 @@ class PlayInPlay(Play):
 
 
         self.roles[3].loop_enable = True
-        self.roles[3].clear_behavior()
         self.roles[3].behavior.add_child(TacticMark('TacticMark', self.roles[3].my_role,base='MarkBase',target='MarkTarget',from_dist=0.5))
-                # TacticKeep('TacticKeep', self.roles[3].my_role, keep_x = -2.0,
-                #     range_high = range_y,
-                #     range_low = 0.5)
-                #)
 
         range_y = constants.FieldHalfY - 0.7
+        pose1 = Pose(-2.0, range_y, 0)
+        pose2 = Pose(-2.0, -range_y, 0)
         self.roles[4].loop_enable = True
         self.roles[4].behavior.add_child(
-                TacticInterposeReceiver('TacticInterposeReceiver', self.roles[4].my_role, base="ANALY_RECEIVE",to_dist = 0) #受け取る側のドリブラーをいじる。
+                TacticIntersection('TacticIntersection', self.roles[4].my_role,
+                    pose1 = pose1, pose2 = pose2)
                 )
-                # TacticKeep('TacticKeep', self.roles[4].my_role, keep_x = -2.0,
-                #     range_high = -0.5,
-                #     range_low = -range_y)
-                # )
 
         pose1 = Pose(-2.5, range_y, 0)
         pose2 = Pose(-2.5, -range_y, 0)
         self.roles[5].loop_enable = True
         self.roles[5].behavior.add_child(
-                TacticInterposeReceiver('TacticInterposeReceiver', self.roles[5].my_role, base="ANALY_RECEIVE",to_dist = 0) #受け取る側のドリブラーをいじる。
+                TacticIntersection('TacticIntersection', self.roles[5].my_role,
+                    pose1 = pose1, pose2 = pose2)
                 )
-                # TacticIntersection('TacticIntersection', self.roles[5].my_role,
-                #     pose1 = pose1, pose2 = pose2)
-                # )
 
         for i in range(6, len(self.roles)):
                 self.roles[i].clear_behavior()
