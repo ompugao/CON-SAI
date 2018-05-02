@@ -389,7 +389,7 @@ class WorldModel(object):
                 angles[0] = angleOfEnemy 
                 angles[1] = angleOfEnemyToGoal 
                 angles[2] = angleOfEnemyToEnemy 
-                # rospy.logerr('EnemyIndex: '+str(EnemyIndex)+'angleOfEnemy: '+str(angleOfEnemy)+' angleOfEnemyToGoal: '+str(angleOfEnemyToGoal)+' angleOfEnemyToEnemy: '+str(angleOfEnemyToEnemy)) 
+                #rospy.logerr('EnemyIndex: '+str(EnemyIndex)+'angleOfEnemy: '+str(angleOfEnemy)+' angleOfEnemyToGoal: '+str(angleOfEnemyToGoal)+' angleOfEnemyToEnemy: '+str(angleOfEnemyToEnemy)) 
                 #3つの角度をソート 
                 a=np.array(angles) 
                 angles_sort=a.argsort() 
