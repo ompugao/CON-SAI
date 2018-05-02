@@ -24,7 +24,6 @@ class TacticInplayShoot(Selector):
         self.verbose = True
         self.add_child(DynamicDrive('drive_to_receive', my_role, coord))
         self.add_child(_Shoot('shoot',my_role))
-        self.add_child(WithDribble('Dribbling', my_role))
 
 
 class _Shoot(Sequence):
@@ -38,6 +37,7 @@ class _Shoot(Sequence):
         DRIVE.add_child(WithKick('WithKick', my_role))
         DRIVE.add_child(DynamicDrive('drive_to_ball', my_role, coord))
         DRIVE.add_child(NoBallAvoidance('NoBallAvoidance', my_role))
+        DRIVE.add_child(WithDribble('Dribbling', my_role))
 
         SHOOT = ParallelOne('SHOOT')
         SHOOT.add_child(DynamicDrive('drive_to_shoot', my_role, coord, 
@@ -45,6 +45,7 @@ class _Shoot(Sequence):
         SHOOT.add_child(WithKick('WithKick', my_role))
         SHOOT.add_child(NoBallAvoidance('NoBallAvoidance', my_role))
         SHOOT.add_child(BallKicked('BallKicked'))
+        SHOOT.add_child(WithDribble('Dribbling', my_role))
 
         self.add_child(DRIVE)
         self.add_child(SHOOT)
