@@ -5,7 +5,8 @@ from pi_trees_lib.task_setup import *
 import sys,os
 sys.path.append(os.pardir)
 from world_model import WorldModel
-
+import numpy as np
+import tool
 
 class WithKick(Task):
     def __init__(self, name, my_role, kick_power=6.0):
@@ -19,6 +20,26 @@ class WithKick(Task):
 
         return TaskStatus.RUNNING
 
+class WithKickIfLookingAt(Task):
+    def __init__(self, name, my_role, target, angle_threshold = np.deg2rad(0.5), kick_power=6.0):
+        super(WithKickIfLookingAt, self).__init__(name)
+        self._my_role = my_role
+        self._kick_power = kick_power
+        self._target = target
+        self._angle_threshold = angle_threshold
+
+    def run(self):
+        target_pose = WorldModel.get_pose(self._target)
+        role_pose = WorldModel.get_pose(self._my_role)
+        t = tool.Trans(role_pose, role_pose.theta)
+        target_pose_local = t.transform(target_pose)
+
+        diff_angle = tool.getAngleFromCenter(target_pose_local)
+        if np.abs(diff_angle) < self._angle_threshold:
+            WorldModel.commands[self._my_role].set_kick(self._kick_power)
+        else:
+            WorldModel.commands[self._my_role].set_kick(0)
+        return TaskStatus.RUNNING
 
 class NoNavigation(Task):
     def __init__(self, name, my_role):
@@ -40,6 +61,7 @@ class NoBallAvoidance(Task):
 
     def run(self):
         WorldModel.commands[self._my_role].avoid_ball = False
+        return TaskStatus.RUNNING
 
 
 class NoDefenceAreaAvoidance(Task):

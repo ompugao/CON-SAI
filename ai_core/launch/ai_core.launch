@@ -34,6 +34,7 @@
     <!-- launch Decision maker -->
     <node name="decision_maker" pkg="decision_making" type="decision_making_node.py" output="screen" respawn="true">
       <env name="ROS_PYTHON_LOG_CONFIG_FILE" value="$(find ai_core)/config/python_logging_debug.conf"/>
+      <param name="debug_publishing" value="true"/>
     </node>
 
     <node name="avoiding_point_generator" pkg="avoiding_point_generator" type="avoiding_point_generator_node" />
@@ -44,7 +45,8 @@
     <!-- <include file="$(find ssl_joystick_operation)/launch/ssl_joystick_operation.launch" /> -->
 
     <!-- Visualizer -->
-    <node name="sai_visualizer" pkg="sai_visualizer" type="sai_visualizer" />
+    <node name="sai_visualizer" pkg="sai_visualizer" type="sai_visualizer"  output="screen" respawn="true"
+    />
     <!-- <node name="rviz" pkg="rviz" type="rviz" /> -->
     <!-- <node name="rqt_console" pkg="rqt_console" type="rqt_console" /> -->
     <!-- <node name="plot" pkg="rqt_plot" type="rqt_plot" /> -->

@@ -87,7 +87,7 @@ class FieldAnalysis(object):
             if best_dist <= nearest_dist:
                 best_dist = nearest_dist
                 best_pos = Pose(i,k,0)
-                rospy.logdebug("best distance %f"%(best_dist))
+                #rospy.logdebug("best distance %f"%(best_dist))
         
         return best_pos,best_dist
 
@@ -121,28 +121,6 @@ class FieldAnalysis(object):
         return Pose(position.x, position.y,0)
 
     @classmethod
-    def get_analysis_area_pose(cls,area): #エリアを指定して、その座標を返す
-        from world_model import WorldModel
-        if area == 'SHOOT':
-            x = FieldAnalysis.get_analyzed_area_num(area)[0]
-            y = FieldAnalysis.get_analyzed_area_num(area)[1]
-            if (x == 12)and(-1 <= y <= 1) : #ゴールへのシュート時
-                position = Pose((x*0.5),(y*0.4),0) #ゴールポストギリギリを狙わないように修正            
-            else: #パス時
-                position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
-
-        elif area == 'RECEIVE':
-            x = FieldAnalysis.get_analyzed_area_num(area)[0]
-            y = FieldAnalysis.get_analyzed_area_num(area)[1]
-            if (x == 12)and(-1 <= y <= 1) :
-                position = Pose((x*0.5),(y*0.4),0) #ゴールポストギリギリを狙わないように修正
-            else: 
-                position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
-
-            yaw = 0
-        return Pose(position.x, position.y,0)
-
-    @classmethod
     def get_analyzed_area_num(cls,area): #最もスコアの高いエリアを抽出
         from world_model import WorldModel
         if area == 'SHOOT':
@@ -161,8 +139,8 @@ class FieldAnalysis(object):
             #dist = math.sqrt(abs((xnum + ynum*1j) - (ball_pose.x + ball_pose.y*1j)))#ボールと座標の距離を出す
             dist = math.sqrt(pow(ball_pose.x-(xnum*0.5),2)+pow(ball_pose.y-(ynum*0.5),2))
             
-            k_power = 0.417 #キックパワーのゲイン
-            b_power = 1.63 #キックパワーのバイアス
+            k_power = 0.8 #キックパワーのゲイン
+            b_power = 1.6 #キックパワーのバイアス
             kick_power = (dist * k_power) + b_power
             #kick_power = 0.5 * dist #係数 * ボールの距離
             if kick_power > 8:    #最大powerが8
@@ -235,7 +213,7 @@ class FieldAnalysis(object):
             FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
             FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
         
-        rospy.logdebug('best_pos x: %f, y: %f, theta %f'%(best_pos.x, best_pos.y, best_pos.theta))
+        #rospy.logdebug('best_pos x: %f, y: %f, theta %f'%(best_pos.x, best_pos.y, best_pos.theta))
         #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
         return None
 
@@ -256,7 +234,7 @@ class FieldAnalysis(object):
                 if nearest_Dist >= Dist:
                     nearest_Dist = Dist
             if nearest_Dist > 0.2:
-                FieldAnalysis.write_area_score('SHOOT',i,k,5)
+                FieldAnalysis.write_area_score('SHOOT',i,k, 6)
         return None
 #####################################################################3
 

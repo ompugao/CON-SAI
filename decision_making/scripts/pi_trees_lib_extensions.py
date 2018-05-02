@@ -99,6 +99,7 @@ class ToggleInplayMode(Task):
 
     def run(self,):
         self.ref_mode.toggle()
+        #print("toggle mode!")
         return TaskStatus.SUCCESS
 
 class ParallelOneIgnoringFailure(Task):
@@ -176,7 +177,9 @@ class TriggerKicked(Task):
     def __init__(self, name, ref_state):
         super(TriggerKicked, self).__init__(name)
         self.ref_state = ref_state
+
     def run(self,):
+        #print("trigger kicked!")
         self.ref_state.set_kicked()
         return TaskStatus.SUCCESS
 
@@ -186,6 +189,15 @@ class ResetState(Task):
         self.ref_state = ref_state
     def run(self):
         self.ref_state.reset()
-        print('reset state!')
+        #print('reset state!')
         return TaskStatus.SUCCESS
+
+class DoNothing(Task):
+    def __init__(self, name, status, *args, **kwargs):
+        super(DoNothing, self).__init__(name, *args, **kwargs)
+
+        self.status
+
+    def run(self):
+        return self.status
 

@@ -23,7 +23,7 @@ class PlayInPlay(Play):
 
         self.applicable = "IN_PLAY"
         self.done_aborted = "IN_PLAY"
-        self.assignment_type = "CLOSEST_BALL"
+        #self.assignment_type = "CLOSEST_BALL"
 
 
         self.roles[0].clear_behavior()
@@ -33,12 +33,13 @@ class PlayInPlay(Play):
         self.kick_state  = KickState()
 
         self.roles[1].clear_behavior()
+        #self.roles[1].loop_enable = True
         self.roles[1].behavior.add_child(
                 TacticInplayReceiveAndShoot('TacticInplayReceiveAndShoot', self.roles[1].my_role, weakref.proxy(self.inplay_mode), weakref.proxy(self.kick_state), shoot_if_mode_is_true=True)
                 )
 
         self.roles[2].clear_behavior() #これ追記したら動きました。(原因不明)
-        self.roles[2].loop_enable = True
+        #self.roles[2].loop_enable = True
         self.roles[2].behavior.add_child(
                 #TacticInterposeReceiver('TacticInterposeReceiver', self.roles[2].my_role, base="ANALY_RECEIVE",to_dist = 0) #受け取る側のドリブラーをいじる。
                 TacticInplayReceiveAndShoot('TacticInplayReceiveAndShoot', self.roles[2].my_role, weakref.proxy(self.inplay_mode), weakref.proxy(self.kick_state), shoot_if_mode_is_true=False)
