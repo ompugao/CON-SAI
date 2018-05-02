@@ -84,7 +84,7 @@ class PlayExecuter(object):
             self._admiral.reset()
             plays = self.playbook.get_plays(current_situation)
             if len(plays) > 0:
-                self._play = plays[0]
+                self._play = plays[0].__class__()
             else:
                 rospy.logwarn("No Play is registered to the situation, named %s", current_situation)
                 self._play = PlayDummy()

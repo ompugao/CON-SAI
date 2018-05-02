@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from play_stop import PlayStop
-
+from play_base import Play
+from world_model import WorldModel
+from tactics.tactic_mark import TacticMark
 from tactics.tactic_inplay_shoot import TacticInplayShoot
 from tactics.tactic_interpose import TacticInterpose
 from tactics.tactic_keep import TacticKeep
@@ -12,7 +14,7 @@ import constants
 from consai_msgs.msg import Pose
 from field_analysis import FieldAnalysis
 
-class PlayInPlay(PlayStop):
+class PlayInPlay(Play):
     def __init__(self):
         super(PlayInPlay, self).__init__('PlayInPlay')
 
@@ -20,6 +22,9 @@ class PlayInPlay(PlayStop):
         self.done_aborted = "IN_PLAY"
         self.assignment_type = "CLOSEST_BALL"
 
+        self.roles[0].clear_behavior()
+        self.roles[0].behavior.add_child(TacticKeep('TacticKeep', self.roles[0].my_role))
+        
         self.roles[1].clear_behavior()
         self.roles[1].behavior.add_child(
                 TacticInplayShoot('TacticInplayShoot', self.roles[1].my_role)
@@ -33,9 +38,7 @@ class PlayInPlay(PlayStop):
  
 
         self.roles[3].loop_enable = True
-        self.roles[3].behavior.add_child(
-                TacticInterposeReceiver('TacticInterposeReceiver', self.roles[3].my_role, base="ANALY_RECEIVE",to_dist = 0) #受け取る側のドリブラーをいじる。
-                )
+        self.roles[3].behavior.add_child(TacticMark('TacticMark', self.roles[3].my_role,base="MarkBase",target='MarkTaget',from_dist=0.5))
                 # TacticKeep('TacticKeep', self.roles[3].my_role, keep_x = -2.0,
                 #     range_high = range_y,
                 #     range_low = 0.5)

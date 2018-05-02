@@ -166,7 +166,7 @@ class FieldAnalysis(object):
                 best_pos = Pose(i,k,0)
                 rospy.logdebug("best distance %f"%(best_dist))
         
-        rospy.logerr(best_pos)
+        #rospy.logerr(best_pos)
         FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,3)
         FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,3) #シュート位置も受け取り位置も同じ
         #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
