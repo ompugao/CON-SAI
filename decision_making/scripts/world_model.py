@@ -305,9 +305,9 @@ class WorldModel(object):
                 ballNearVectorR = WorldModel.dot(ballVelVector.x+ballVelVector.y*1j,ballKeepVector.x+ballKeepVector.y*1j)/(pow(ballVelVector.x,2)+pow(ballVelVector.y,2)) 
                 ballNearVectorX = ballNearVectorR*ballVelVector.x 
                 ballNearVectorY = ballNearVectorR*ballVelVector.y 
-                if ballNearVectorX+WorldModel.get_pose('Ball').x > -constants.FieldHalfX: 
-                    p1 = Pose(WorldModel.get_pose('Ball').x+ballNearVectorR*ballVelVector.x,WorldModel.get_pose('Ball').y+ballNearVectorR*ballVelVector.y+1,0) 
-                    p2 = Pose(WorldModel.get_pose('Ball').x+ballNearVectorR*ballVelVector.x,WorldModel.get_pose('Ball').y+ballNearVectorR*ballVelVector.y-1,0) 
+                if ballNearVectorX+WorldModel.get_pose('Ball').x > -constants.FieldHalfX + constants.RobotRadius and abs(ballNearVectorY+WorldModel.get_pose('Ball').y)<constants.GoalHalfSize: 
+                    p1 = Pose(WorldModel.get_pose('Ball').x+ballNearVectorR*ballVelVector.x,WorldModel.get_pose('Ball').y+ballNearVectorR*ballVelVector.y+0.1,0) 
+                    p2 = Pose(WorldModel.get_pose('Ball').x+ballNearVectorR*ballVelVector.x,WorldModel.get_pose('Ball').y+ballNearVectorR*ballVelVector.y-0.1,0) 
                 # p1=Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y+1,0) 
                 # p2=Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y-1,0) 
             else:#パスっぽい 
