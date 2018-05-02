@@ -95,6 +95,12 @@ class Coordinate(object):
         self._target = target
         self._update_func = self._update_position_looking_at_target
 
+    def set_dynamic_position_looking_at_target(self, my_role, pose_name, target="Ball"):
+        self._my_role = my_role
+        self._pose_name = pose_name
+        self._target = target
+        self._update_func = self._update_dynamic_position_looking_at_target
+
 
     def set_interpose(self, base="CONST_OUR_GOAL", target="Ball", to_dist=None, from_dist=None):
         # baseとtargetを直線で結び、その直線上に移動する
@@ -246,6 +252,14 @@ class Coordinate(object):
         target_pose = WorldModel.get_pose(self._target)
         role_pose = WorldModel.get_pose(self._my_role)
         angle = tool.getAngle(role_pose, target_pose)
+        self._pose.theta = angle
+        return True
+
+    def _update_dynamic_position_looking_at_target(self,):
+        target_pose = WorldModel.get_pose(self._target)
+        role_pose = WorldModel.get_pose(self._my_role)
+        angle = tool.getAngle(role_pose, target_pose)
+        self._pose = WorldModel.get_pose(self._pose_name)
         self._pose.theta = angle
         return True
 

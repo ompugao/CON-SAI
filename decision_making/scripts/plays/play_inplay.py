@@ -4,12 +4,15 @@ from play_base import Play
 from world_model import WorldModel
 from tactics.tactic_mark import TacticMark
 from tactics.tactic_inplay_shoot import TacticInplayShoot
+from tactics.tactic_inplay_receive_and_shoot import TacticInplayReceiveAndShoot
 from tactics.tactic_interpose import TacticInterpose
 from tactics.tactic_keep import TacticKeep
 from tactics.tactic_intersection import TacticIntersection
 from tactics.tactic_interpose_receiver import TacticInterposeReceiver
 from tactics.tactic_mark import TacticMark
+from tactics.tactic_state import InplayMode, KickState
 import constants
+import weakref
 
 from consai_msgs.msg import Pose
 from field_analysis import FieldAnalysis
@@ -22,18 +25,23 @@ class PlayInPlay(Play):
         self.done_aborted = "IN_PLAY"
         self.assignment_type = "CLOSEST_BALL"
 
+
         self.roles[0].clear_behavior()
         self.roles[0].behavior.add_child(TacticKeep('TacticKeep', self.roles[0].my_role))
 
+        self.inplay_mode = InplayMode()
+        self.kick_state  = KickState()
+
         self.roles[1].clear_behavior()
         self.roles[1].behavior.add_child(
-                TacticInplayShoot('TacticInplayShoot', self.roles[1].my_role)
+                TacticInplayReceiveAndShoot('TacticInplayReceiveAndShoot', self.roles[1].my_role, weakref.proxy(self.inplay_mode), weakref.proxy(self.kick_state), shoot_if_mode_is_true=True)
                 )
 
         self.roles[2].clear_behavior() #これ追記したら動きました。(原因不明)
         self.roles[2].loop_enable = True
         self.roles[2].behavior.add_child(
-                TacticInterposeReceiver('TacticInterposeReceiver', self.roles[2].my_role, base="ANALY_RECEIVE",to_dist = 0) #受け取る側のドリブラーをいじる。
+                #TacticInterposeReceiver('TacticInterposeReceiver', self.roles[2].my_role, base="ANALY_RECEIVE",to_dist = 0) #受け取る側のドリブラーをいじる。
+                TacticInplayReceiveAndShoot('TacticInplayReceiveAndShoot', self.roles[2].my_role, weakref.proxy(self.inplay_mode), weakref.proxy(self.kick_state), shoot_if_mode_is_true=False)
                 )
 
 

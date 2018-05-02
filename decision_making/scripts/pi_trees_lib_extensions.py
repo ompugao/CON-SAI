@@ -60,6 +60,47 @@ class OverwriteSequenceCondition(Task):
         self.conditional_seq.set_condition(self.condition)
         return TaskStatus.SUCCESS
 
+class ModeSelector(Task):
+    def __init__(self, name, mode, *args, **kwargs):
+        super(ModeSelector, self).__init__(name, *args, **kwargs)
+        self._default_mode = mode
+        self.mode = mode
+        if len(self.children) != 2:
+            print('invalid num of children')
+        self._last_mode = self.mode()
+
+    def run(self):
+        current_mode = self.mode()
+
+        index = 0
+        if not current_mode:
+            index = 1
+
+        # reset when mode is toggled
+        if current_mode is not self._last_mode:
+            self.reset()
+
+        c = self.children[index]
+        if c.status == TaskStatus.SUCCESS:
+            return c.status
+
+        c.status = c.run()
+
+        return c.status
+
+    def reset(self):
+        super(ModeSelector, self).reset()
+        self.mode = self._default_mode
+
+class ToggleInplayMode(Task):
+    def __init__(self, name, ref_mode, *args, **kwargs):
+        super(ToggleInplayMode, self).__init__(name, *args, **kwargs)
+        self.ref_mode = ref_mode
+
+    def run(self,):
+        self.ref_mode.toggle()
+        return TaskStatus.SUCCESS
+
 class ParallelOneIgnoringFailure(Task):
     """
     TODO: write me
@@ -105,6 +146,10 @@ class TaskDone(Task):
     def set_done(self, ):
         self._b_done = True
 
+    def reset(self, ):
+        super(TaskDone, self).reset()
+        self._b_done = False
+
     def run(self):
         if self._b_done:
             return TaskStatus.SUCCESS
@@ -125,3 +170,22 @@ class Print(Task):
     def run(self):
         rospy.loginfo('%s is running!'%(self.name))
         return TaskStatus.RUNNING
+
+
+class TriggerKicked(Task):
+    def __init__(self, name, ref_state):
+        super(TriggerKicked, self).__init__(name)
+        self.ref_state = ref_state
+    def run(self,):
+        self.ref_state.set_kicked()
+        return TaskStatus.SUCCESS
+
+class ResetState(Task):
+    def __init__(self, name, ref_state):
+        super(ResetState, self).__init__(name)
+        self.ref_state = ref_state
+    def run(self):
+        self.ref_state.reset()
+        print('reset state!')
+        return TaskStatus.SUCCESS
+

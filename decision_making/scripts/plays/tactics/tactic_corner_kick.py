@@ -1,10 +1,10 @@
 
 from pi_trees_ros.pi_trees_ros import *
 from pi_trees_lib.task_setup import *
-from pi_trees_lib_extensions import ConditionalSequence, OverwriteSequenceCondition, TaskDone, SetTaskDone, ParallelOneIgnoringFailure
+from pi_trees_lib_extensions import ConditionalSequence, OverwriteSequenceCondition, TaskDone, SetTaskDone, ParallelOneIgnoringFailure, TriggerKicked
 from skills.dynamic_drive import DynamicDrive
 from skills.observations import BallKicked
-from skills.adjustments import WithKick, NoBallAvoidance, FlexibleKick
+from skills.adjustments import WithKick, NoBallAvoidance, FlexibleKick, WithDribble
 import weakref
 
 sys.path.append(os.pardir)
@@ -115,17 +115,11 @@ class TacticCornerKick(Sequence):
             kick.add_child(FlexibleKick('FlexibleKick', my_role, kick_options_func_generator(target_role)))
             kick.add_child(NoBallAvoidance('NoBallAvoidance', my_role))
             kick.add_child(BallKicked('BallKicked'))
+            kick.add_child(WithDribble('Dribbling', my_role))
 
             seq.add_child(kick)
 
             p = ParallelAll('parallelall')
-            class TriggerKicked(Task):
-                def __init__(self, name, ref_state):
-                    super(TriggerKicked, self).__init__(name)
-                    self.ref_state = ref_state
-                def run(self,):
-                    self.ref_state.set_kicked()
-                    return TaskStatus.SUCCESS
             p.add_child(TriggerKicked('trigger_kicked', ref_cornerkick_state))
             #p.add_child(OverwriteSequenceCondition('continue_after_kick', seq, (lambda: True)))
             p.add_child(SetTaskDone('set_task_done', weakref.proxy(task_done)))
