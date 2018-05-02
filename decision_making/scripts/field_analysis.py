@@ -97,6 +97,37 @@ class FieldAnalysis(object):
 
 ############################ 評価関係　　##############################
     @classmethod
+    def get_best_receiving_pose(cls): #エリアを指定して、その座標を返す
+        from world_model import WorldModel
+        x = FieldAnalysis.get_analyzed_area_num('RECEIVE')[0]
+        y = FieldAnalysis.get_analyzed_area_num('RECEIVE')[1]
+        if (x == 12)and(-1 <= y <= 1) :
+            position = Pose((x*0.5),(y*0.4),0) #ゴールポストギリギリを狙わないように修正
+        else: 
+            position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
+
+        return Pose(position.x, position.y,0)
+
+    @classmethod
+    def get_best_passing_pose(cls): #エリアを指定して、その座標を返す
+        from world_model import WorldModel
+        x = FieldAnalysis.get_analyzed_area_num('SHOOT')[0]
+        y = FieldAnalysis.get_analyzed_area_num('SHOOT')[1]
+        if (x == 12)and(-1 <= y <= 1) : #ゴールへのシュート時
+            position = Pose((x*0.5),(y*0.4),0) #ゴールポストギリギリを狙わないように修正            
+        else: #パス時
+            position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
+
+            ###########敵側フィールドにいるにもかかわらず、味方側へパスをしてしまう現象への対策##############
+            ballgoal_dist = abs(12*0.5 - WorldModel.get_pose('Ball').x) #ボールの相手ゴールとの距離
+            areagoal_dist = abs(12*0.5 - position.x*0.5) #評価エリアの相手ゴールとの距離
+            if ballgoal_dist < areagoal_dist:
+                position = Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y+0.5,0) #パス位置をボールの位置のちょっと↑。つまり、後ろにはパスしない事になる。
+            ###########################################################################################################
+
+        return Pose(position.x, position.y,0)
+
+    @classmethod
     def get_analysis_area_pose(cls,area): #エリアを指定して、その座標を返す
         from world_model import WorldModel
         if area == 'SHOOT':

@@ -535,10 +535,10 @@ class WorldModel(object):
         
         elif name[:5] == 'ANALY':#評価したエリアの座標
             if name == 'ANALY_PATH': #パスをシュートする
-                pose = FieldAnalysis.get_analysis_area_pose('SHOOT')
+                pose = FieldAnalysis.get_best_passing_pose()
             #rospy.logerr(pose)
             if name == 'ANALY_RECEIVE': #パスを受け取る
-                pose = FieldAnalysis.get_analysis_area_pose('RECEIVE')
+                pose = FieldAnalysis.get_best_receiving_pose()
 
 
         #rospy.logerr(WorldModel.get_friend_pose(1))
