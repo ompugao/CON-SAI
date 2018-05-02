@@ -279,7 +279,6 @@ class Coordinate(object):
 
         self._pose = interposed_pose
         
-        rospy.logerr('mark pose: %f, %f'%(self._pose.x, self._pose.y))
         return True
 
 
