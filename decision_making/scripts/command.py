@@ -19,8 +19,8 @@ class Command(object):
         self.avoid_ball = True
         self.avoid_defence_area = True
 
-        self._MAX_KICK_POWER = 8.0
-        self._MAX_DRIBBLE_POWER = 8.0
+        self._MAX_KICK_POWER = 6.5 #[m/s]
+        self._MAX_DRIBBLE_POWER = 800 #[rpm]
 
         self.set_target_velocity(0,0,0)
     
@@ -53,6 +53,10 @@ class Command(object):
 
 
     def set_kick(self, power, chip_enable=False):
+        """
+        :arg: power [m/s]
+        :arg: chip_enable (boolean)
+        """
         kick_power = power
 
         if kick_power < 0:
@@ -65,6 +69,9 @@ class Command(object):
 
 
     def set_dribble(self, power):
+        """
+        :arg: power [rpm]
+        """
         dribble_power = power
 
         if dribble_power < 0:

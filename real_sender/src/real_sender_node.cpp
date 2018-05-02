@@ -104,8 +104,8 @@ public:
         float   vel_x     = msg->vel_surge,
             vel_y         = msg->vel_sway,
             omega         = msg->omega,
-            kick_power    = boost::algorithm::clamp(msg->kick_speed_x, 0.0, 15.0),
-            dribble_power = boost::algorithm::clamp(msg->dribble_power, 0.0, 15.0);
+            kick_power    = boost::algorithm::clamp(msg->kick_speed_x * 2, 0.0, 15.0), //XXX: this value is halfen inside the kick circuit
+            dribble_power = boost::algorithm::clamp(msg->dribble_power / 50, 0.0, 15.0); //XXX: rpm -> [0 - 16]
         RobotCommand::KickType  kick_type = (msg->kick_speed_z > 0.0) ? RobotCommand::CHIP : RobotCommand::STRAIGHT;
 
         RobotCommand cmd(mID_, vel_x, vel_y, omega, dribble_power, kick_power, kick_type);
