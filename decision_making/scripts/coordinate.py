@@ -17,8 +17,9 @@ class Coordinate(object):
     # Coordinateクラスには、移動目標の生成方法をsetしなければならない
     # Coordinateクラスのget_pose()にて現在の移動目標が取得できる
 
-    def __init__(self):
+    def __init__(self, verbose = False):
         self._pose = Pose() # pos_x, pos_y, thta
+        self.verbose = verbose
 
         self._base = None # string data
         self._target = None # string data
@@ -254,6 +255,11 @@ class Coordinate(object):
         target_pose = WorldModel.get_pose(self._target)
 
         if base_pose is None or target_pose is None:
+            if base_pose is None:
+                rospy.logerr("%s is None"%(self._base))
+            if target_pose is None:
+                rospy.logerr("%s is None"%(self._target))
+            rospy.logerr('failed to update interpose')
             return False
 
         angle_to_target = tool.getAngle(base_pose, target_pose)
@@ -273,6 +279,7 @@ class Coordinate(object):
 
         self._pose = interposed_pose
         
+        rospy.logerr('mark pose: %f, %f'%(self._pose.x, self._pose.y))
         return True
 
 
@@ -412,6 +419,7 @@ class Coordinate(object):
 
         self._pose = Pose(intersection.x, intersection.y, angle)
 
+        rospy.logerr('Keeper pose: %f, %f'%(self._pose.x, self._pose.y))
         return True
 
 

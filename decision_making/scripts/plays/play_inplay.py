@@ -24,21 +24,22 @@ class PlayInPlay(Play):
 
         self.roles[0].clear_behavior()
         self.roles[0].behavior.add_child(TacticKeep('TacticKeep', self.roles[0].my_role))
-        
+
         self.roles[1].clear_behavior()
         self.roles[1].behavior.add_child(
                 TacticInplayShoot('TacticInplayShoot', self.roles[1].my_role)
                 )
-        
+
         self.roles[2].clear_behavior() #これ追記したら動きました。(原因不明)
         self.roles[2].loop_enable = True
         self.roles[2].behavior.add_child(
                 TacticInterposeReceiver('TacticInterposeReceiver', self.roles[2].my_role, base="ANALY_RECEIVE",to_dist = 0) #受け取る側のドリブラーをいじる。
                 )
- 
+
 
         self.roles[3].loop_enable = True
-        self.roles[3].behavior.add_child(TacticMark('TacticMark', self.roles[3].my_role,base="MarkBase",target='MarkTaget',from_dist=0.5))
+        self.roles[3].clear_behavior()
+        self.roles[3].behavior.add_child(TacticMark('TacticMark', self.roles[3].my_role,base='MarkBase',target='MarkTarget',from_dist=0.5))
                 # TacticKeep('TacticKeep', self.roles[3].my_role, keep_x = -2.0,
                 #     range_high = range_y,
                 #     range_low = 0.5)

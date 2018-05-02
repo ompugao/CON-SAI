@@ -7,9 +7,9 @@
     <rosparam param="enemies_id_list">[0, 1, 2, 3, 4, 5]</rosparam>
   </node>
 
-  <!-- Run Sender -->
+  <!-- Run Sender 192.168.15.2-->
   <node name="sender" pkg="grsim_wrapper" type="command_sender.py">
-    <param name="server_address" type="string" value="127.0.0.1" />
+    <param name="server_address" type="string" value="192.168.15.2" />  <!-- Scramble 192.168.15.2 mine127.0.0.1-->
     <param name="server_port" value="20011" />
     <!-- <remap from="/robot_0/robot_commands" to="/ssl_joy/ssl_joystick/robot_commands" /> -->
   </node>
