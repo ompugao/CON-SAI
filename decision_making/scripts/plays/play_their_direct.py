@@ -48,15 +48,12 @@ class PlayTheirDirect(Play):
                 if enemy_pose is None:
                     continue
 
-                ranging.append( math.hypot(enemy_pose.x-goal_pose.x, enemy_pose.y-goal_pose.y) + math.hypot(enemy_pose.x-ball_pose.x, enemy_pose.y-ball_pose.y) )
+                ranging.append( (i, math.hypot(enemy_pose.x-goal_pose.x, enemy_pose.y-goal_pose.y) + math.hypot(enemy_pose.x-ball_pose.x, enemy_pose.y-ball_pose.y)) )
                 #rospy.logerr('ranging'+str(i)+':'+str(ranging[i]))
-            num_missing_enemies = num_enemies - len(ranging)
-            for i in range(num_missing_enemies):
-                ranging.append(np.inf)
+            for i in range(len(ranging), num_enemies):
+                ranging.append( (i, np.inf) )
             #sort_index
-            ranging_sort = ranging.argsort()
-            # for i in range(0,6):
-            #     rospy.logerr('sort'+str(i)+':'+str(ranging_sort[i]))
+            ranging_sort = map((lambda x: x[0]), sorted(ranging, key=(lambda x: x[1])))
         else:
             ranging_sort = np.array(range(num_enemies))
         #mark
