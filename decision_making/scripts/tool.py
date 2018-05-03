@@ -76,7 +76,7 @@ def get_intersection(pose1, pose2, pose3, pose4):
 
     s2 = ((pose4.x - pose3.x) * (pose3.y - pose2.y) \
             - (pose4.y - pose3.y) * (pose3.x - pose2.x)) / 2.0
-    if s1+s2==0:
+    if numpy.abs(s1 + s2) <= 1e-4:
         return False
     coefficient = s1 / (s1 + s2)
 
