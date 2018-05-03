@@ -112,8 +112,8 @@ public:
 
         char data[18];
         serializer.serialize(cmd, data);
-        if(mID_ == 0)
-	        ROS_ERROR("%d",data[2]);
+        //if(mID_ == 0)
+			//ROS_ERROR("%d",data[2]);
 
         //for debug
         //if(mID_ == 0)
