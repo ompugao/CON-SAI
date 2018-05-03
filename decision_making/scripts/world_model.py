@@ -285,9 +285,9 @@ class WorldModel(object):
         #p1,p2の初期定義 
         p1 = Pose(-constants.FieldHalfX + constants.RobotRadius * 2.0, -(constants.GoalHalfSize - constants.RobotRadius), 0) 
         p2 = Pose(-constants.FieldHalfX + constants.RobotRadius * 2.0, (constants.GoalHalfSize - constants.RobotRadius), 0) 
-        if WorldModel.get_velocity('Ball') is None or WorldModel.get_velocity('Threat_0') is None: 
+        if WorldModel.get_velocity('Role_0') is None or WorldModel.get_velocity('Ball') is None or WorldModel.get_velocity('Threat_0') is None: 
             base = WorldModel.get_pose('CONST_OUR_GOAL') 
-            target = WorldModel.get_pose('Ball') 
+            target = WorldModel.get_pose('CONST_THEIR_GOAL') 
             # rospy.logerr('0') 
         elif pow(WorldModel.get_velocity('Ball').x,2)+pow(WorldModel.get_velocity('Ball').y,2) > pow(2.5,2):#ボールに速度がある 
             #ボールの速度方向を計算 
@@ -442,14 +442,17 @@ class WorldModel(object):
                     else :
                         base = WorldModel.get_pose('CONST_OUR_GOAL') 
                         target = WorldModel.get_pose('Ball')   
- 
+        if base is None or target is None or p1 is None or p2 is None:
+            base = WorldModel.get_pose('CONST_OUR_GOAL') 
+            target = WorldModel.get_pose('CONST_THEIR_GOAL') 
+
         return base,target,p1,p2#ベースとターゲット入れ替えなう 
  
     @classmethod 
     def MarkAnalysis(cls): 
-        if WorldModel.get_velocity('Ball') is None or WorldModel.get_velocity('Threat_0') is None: 
+        if WorldModel.get_velocity('Role_0') is None or WorldModel.get_velocity('Ball') is None or WorldModel.get_velocity('Threat_0') is None: 
             base = 'CONST_OUR_GOAL'
-            target = 'Threat_0'
+            target = 'TCONST_THEIR_GOAL'
         elif pow(WorldModel.get_velocity('Ball').x,2)+pow(WorldModel.get_velocity('Ball').y,2) > pow(2.5,2):#ボールに速度がある 
             #ボールの速度方向を計算 
             angleOfSpeed = math.atan2(WorldModel.get_velocity('Ball').y, WorldModel.get_velocity('Ball').x) 
@@ -516,7 +519,9 @@ class WorldModel(object):
                         MinEnemyDist = EnemyDist 
                         target = 'Enemy_'+str(enemy_num)
  
-
+        if base is None or target is None:
+            base = 'CONST_OUR_GOAL'
+            target = 'TCONST_THEIR_GOAL'
         return base,target 
 
 
