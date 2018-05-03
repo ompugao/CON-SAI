@@ -3,6 +3,7 @@ from pi_trees_ros.pi_trees_ros import *
 from pi_trees_lib.task_setup import *
 from consai_msgs.msg import Pose
 from skills.dynamic_drive import DynamicDrive
+from skills.adjustments import NoDefenceAreaAvoidance
 import math
 from world_model import WorldModel
 sys.path.append(os.pardir)
@@ -20,4 +21,5 @@ class TacticGoalie(ParallelAll):
 
         self.add_child(DynamicDrive('DynamicDrive', my_role, self._coordinate,
             always_running = True))
+        self.add_child(NoDefenceAreaAvoidance('NoDefenceAvoidance', my_role))  
 
