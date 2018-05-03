@@ -88,7 +88,7 @@ class FieldAnalysis(object):
                 best_dist = nearest_dist
                 best_pos = Pose(i,k,0)
                 #rospy.logdebug("best distance %f"%(best_dist))
-        
+
         return best_pos,best_dist
 
 
@@ -210,18 +210,24 @@ class FieldAnalysis(object):
             else :
                 best_pos = pose_2
 
-            FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
-            FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
-        
-        #rospy.logdebug('best_pos x: %f, y: %f, theta %f'%(best_pos.x, best_pos.y, best_pos.theta))
-        #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
+            ###########################同じところにパスし続けないようにする##########################
+            
+            #実座標変換用にPose型に変換
+            best_position = Pose((best_pos.x*(FieldAnalysis.FieldX / (FieldAnalysis.xgrid-1))),(best_pos.y*(FieldAnalysis.FieldY / (FieldAnalysis.ygrid-1))),0)
+            ball_pose = WorldModel.get_pose('Ball')
+
+            #現在のボールと、パス位置の距離が0.5以上の場合、そこをパス位置とする。
+            if tool.getLength(best_position, ball_pose) >= 0.5 :
+                FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
+                FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
+
         return None
 
     @classmethod
     def Score_Goal(cls):  #ボールとゴールの直線を評価して、敵がいなければシュート！
         from world_model import WorldModel
         i = 12#18
-        for k in range(-1,1,1):#6,7
+        for k in range(-1,2,1):#6,7
             nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ
             for enemy_num in range(len(WorldModel.enemy_assignments)):
                 #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
