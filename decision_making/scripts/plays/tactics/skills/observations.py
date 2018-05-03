@@ -27,7 +27,7 @@ class Triggered(Task):
 
     def run(self):
         if self.triggered():
-            print('triggered!')
+            #print('triggered!')
             return TaskStatus.SUCCESS
         return TaskStatus.RUNNING
 
