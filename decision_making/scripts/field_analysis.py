@@ -21,6 +21,7 @@ class FieldAnalysis(object):
     ygrid = 19 
     FieldX = constants.FieldX #フィールド寸法
     FieldY = constants.FieldY #フィールド寸法
+    grid_dist = (FieldX / (xgrid-1)) #1グリッドの長さ　== フィールド12*9 グリッド25*19の場合、FieldAnalysis.grid_dist[m]
 
     #変数定義
     #area_score = np.array([[0]*ygrid for i in range(xgrid)])
@@ -41,6 +42,14 @@ class FieldAnalysis(object):
             return FieldAnalysis.shoot_score[i+((FieldAnalysis.xgrid-1)/2), j+((FieldAnalysis.ygrid-1)/2)]
         elif area == 'RECEIVE':
             return FieldAnalysis.receive_score[i+((FieldAnalysis.xgrid-1)/2), j+((FieldAnalysis.ygrid-1)/2)]
+    
+    @classmethod
+    def addwrite_area_score(self,area,i, j,score): #スコア記述用
+        if area == 'SHOOT':
+            FieldAnalysis.shoot_score[i+((FieldAnalysis.xgrid-1)/2), j+((FieldAnalysis.ygrid-1)/2)] = (FieldAnalysis.read_area_score(area,i, j)) + score
+        elif area == 'RECEIVE':
+            FieldAnalysis.receive_score[i+((FieldAnalysis.xgrid-1)/2), j+((FieldAnalysis.ygrid-1)/2)] = (FieldAnalysis.read_area_score(area,i, j)) + score
+        return None
 ############################################################
 
 ##############　評価用　計算関係　#####################
@@ -80,7 +89,7 @@ class FieldAnalysis(object):
                     continue
                 c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
                 ball_pose = WorldModel.get_pose("Ball")
-                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*0.5)+(k*0.5)*1j)) 
+                dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x + ball_pose.y*1j,(i*FieldAnalysis.grid_dist)+(k*FieldAnalysis.grid_dist)*1j)) 
                 if nearest_dist > dist:
                     nearest_dist = dist
                     nearest_enemynum = enemy_num
@@ -101,10 +110,10 @@ class FieldAnalysis(object):
         from world_model import WorldModel
         x = FieldAnalysis.get_analyzed_area_num('RECEIVE')[0]
         y = FieldAnalysis.get_analyzed_area_num('RECEIVE')[1]
-        if (x == 12)and(-1 <= y <= 1) :
-            position = Pose((x*0.5),(y*0.4),0) #ゴールポストギリギリを狙わないように修正
+        if (x == ((xgrid-1)/2))and(-1 <= y <= 1) :
+            position = Pose((x*FieldAnalysis.grid_dist),(y*(FieldAnalysis.grid_dist*0.8)),0) #ゴールポストギリギリを狙わないように修正
         else: 
-            position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
+            position = Pose((x*FieldAnalysis.grid_dist),(y*FieldAnalysis.grid_dist),0) #エリアは50cm正方で分割
 
         return Pose(position.x, position.y,0)
 
@@ -113,10 +122,10 @@ class FieldAnalysis(object):
         from world_model import WorldModel
         x = FieldAnalysis.get_analyzed_area_num('SHOOT')[0]
         y = FieldAnalysis.get_analyzed_area_num('SHOOT')[1]
-        if (x == 12)and(-1 <= y <= 1) : #ゴールへのシュート時
-            position = Pose((x*0.5),(y*0.4),0) #ゴールポストギリギリを狙わないように修正            
+        if (x == ((xgrid-1)/2))and(-1 <= y <= 1) : #ゴールへのシュート時
+            position = Pose((x*FieldAnalysis.grid_dist),(y*(FieldAnalysis.grid_dist*0.8)),0) #ゴールポストギリギリを狙わないように修正            
         else: #パス時
-            position = Pose((x*0.5),(y*0.5),0) #エリアは50cm正方で分割
+            position = Pose((x*FieldAnalysis.grid_dist),(y*FieldAnalysis.grid_dist),0) #エリアは50cm正方で分割
 
         return Pose(position.x, position.y,0)
 
@@ -137,15 +146,15 @@ class FieldAnalysis(object):
             ###########キックパワー調節############
             ball_pose = WorldModel.get_pose("Ball")
             #dist = math.sqrt(abs((xnum + ynum*1j) - (ball_pose.x + ball_pose.y*1j)))#ボールと座標の距離を出す
-            dist = math.sqrt(pow(ball_pose.x-(xnum*0.5),2)+pow(ball_pose.y-(ynum*0.5),2))
+            dist = math.sqrt(pow(ball_pose.x-(xnum*FieldAnalysis.grid_dist),2)+pow(ball_pose.y-(ynum*FieldAnalysis.grid_dist),2))
             
             k_power = 0.8 #キックパワーのゲイン
             b_power = 1.6 #キックパワーのバイアス
             kick_power = (dist * k_power) + b_power
-            #kick_power = 0.5 * dist #係数 * ボールの距離
+            #kick_power = FieldAnalysis.grid_dist * dist #係数 * ボールの距離
             if kick_power > 8:    #最大powerが8
                 kick_power = 8
-            if xnum == 12:    #座標がゴールの場合は全力でシュート！！
+            if xnum == ((xgrid-1)/2):    #座標がゴールの場合は全力でシュート！！
                 kick_power = 8
             
             WorldModel.commands['Role_1'].set_kick(kick_power)
@@ -188,7 +197,7 @@ class FieldAnalysis(object):
             FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
             FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
         
-        if score == 4:
+        elif score == 4:
             x =  10  #X軸num
 
             pose_1=Pose(0,0,0)
@@ -213,14 +222,12 @@ class FieldAnalysis(object):
             FieldAnalysis.write_area_score('SHOOT',best_pos.x, best_pos.y,score)
             FieldAnalysis.write_area_score('RECEIVE',best_pos.x, best_pos.y,score) #シュート位置も受け取り位置も同じ
         
-        #rospy.logdebug('best_pos x: %f, y: %f, theta %f'%(best_pos.x, best_pos.y, best_pos.theta))
-        #rospy.logerr(FieldAnalysis.analysis_area_score[13][10])
         return None
 
     @classmethod
     def Score_Goal(cls):  #ボールとゴールの直線を評価して、敵がいなければシュート！
         from world_model import WorldModel
-        i = 12#18
+        i = ((xgrid-1)/2)#18
         for k in range(-1,1,1):#6,7
             nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ
             for enemy_num in range(len(WorldModel.enemy_assignments)):
@@ -230,11 +237,11 @@ class FieldAnalysis(object):
                     continue
                 c_enemy_pose = complex(enemy_pose.x, enemy_pose.y)
                 ball_pose = WorldModel.get_pose('Ball')
-                Dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x+ball_pose.y*1j,(i*0.5)+(k*0.4)*1j)) #ゴール端をシュート目標にしていたので、幅を0.4として修正
+                Dist = FieldAnalysis.dotLineDist(c_enemy_pose, (ball_pose.x+ball_pose.y*1j,(i*FieldAnalysis.grid_dist)+(k*(FieldAnalysis.grid_dist*0.8))*1j)) #ゴール端をシュート目標にしていたので、幅を(FieldAnalysis.grid_dist*0.8)として修正
                 if nearest_Dist >= Dist:
                     nearest_Dist = Dist
             if nearest_Dist > 0.2:
-                FieldAnalysis.write_area_score('SHOOT',i,k, 6)
+                FieldAnalysis.write_area_score('SHOOT',i,k, 6)            
         return None
 #####################################################################3
 
