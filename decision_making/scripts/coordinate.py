@@ -427,6 +427,8 @@ class Coordinate(object):
         intersection = tool.get_intersection(base_pose, target_pose, 
                 self._pose1, self._pose2)
 
+        if intersection is None:
+            return False
 
         angle = tool.getAngle(intersection, target_pose)
 
