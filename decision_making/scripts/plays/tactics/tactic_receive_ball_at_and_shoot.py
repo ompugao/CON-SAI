@@ -3,7 +3,7 @@ from pi_trees_lib.task_setup import *
 from pi_trees_lib_extensions import ConditionalSequence, OverwriteSequenceCondition, Print
 
 from skills.dynamic_drive import DynamicDrive
-from skills.adjustments import WithKick, NoBallAvoidance, WithDefenceAreaAvoidance
+from skills.adjustments import WithKick, NoBallAvoidance, WithDefenceAreaAvoidance, WithDribble
 from skills.observations import BallKicked, Triggered, BallInside
 
 from world_model import WorldModel
@@ -63,6 +63,7 @@ class TacticReceiveBallAtAndShoot(Sequence):
         shoot = ParallelOne('shoot')
         shoot.add_child(DynamicDrive('drive_to_shoot', my_role, coord, always_running = True))
         shoot.add_child(WithKick('WithKick', my_role))
+        shoot.add_child(WithDribble('Dribbling', my_role))
         shoot.add_child(NoBallAvoidance('NoBallAvoidance', my_role))
         shoot.add_child(WithDefenceAreaAvoidance('AvoidDefenceArea', my_role))
         shoot.add_child(BallKicked('BallKicked'))
