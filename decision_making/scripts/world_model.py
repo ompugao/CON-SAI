@@ -289,6 +289,23 @@ class WorldModel(object):
             base = WorldModel.get_pose('CONST_OUR_GOAL') 
             target = WorldModel.get_pose('CONST_THEIR_GOAL') 
             # rospy.logerr('0') 
+        elif WorldModel.get_pose('Role_0').x <= (-constants.FieldHalfX + constants.RobotRadius):
+            if WorldModel.get_pose('Role_0').y>0:
+                apy = constants.GoalHalfSize+ constants.RobotRadius*4
+            else:
+                apy = -constants.GoalHalfSize- constants.RobotRadius*4
+            base = Pose(WorldModel.get_pose('CONST_THEIR_GOAL').x,apy,0)
+            target = Pose(WorldModel.get_pose('CONST_OUR_GOAL').x,apy,0)
+            p1 = Pose(-constants.FieldHalfX+ constants.RobotRadius*2,-2,0)
+            p2 = Pose(-constants.FieldHalfX+ constants.RobotRadius*2,2,0)
+            # if ap.x < -constants.FieldHalfX:
+            #     print('ap')
+            #     from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
+                
+            # print('ap: %f   %f'%(ap.x, ap.y))
+            # apc = Coordinate()
+            # apc.set_intersection(base='KeepBase', target='KeepTarget',pose1=p1, pose2=p2)
+            #rospy.logerr('p1'+str(p1)+'p2'+str(p2)+'target'+str(target)+'base'+str(base)+'   ap'+str(ap.x)+','+str(ap.y)+'   appp'+str((p1.x-p2.x)/2+p2.x)+','+str((p1.y-p2.y)/2+p2.y)+'   aptb'+str((target.x-target.x)/2+target.x)+','+str((base.y-base.y)/2+base.y)) 
         elif pow(WorldModel.get_velocity('Ball').x,2)+pow(WorldModel.get_velocity('Ball').y,2) > pow(2.5,2):#ボールに速度がある 
             #ボールの速度方向を計算 
             angleOfSpeed = math.atan2(WorldModel.get_velocity('Ball').y, WorldModel.get_velocity('Ball').x) 
@@ -301,7 +318,6 @@ class WorldModel(object):
             if GoalDist <= constants.GoalHalfSize + 0.3:#シュートっぽい 
                 base = VelPoint 
                 target = WorldModel.get_pose('Ball') 
-                # rospy.logerr(' v s') 
                 #p1,p2の再計算 
                 ballVelVector = Pose(VelPoint.x - WorldModel.get_pose('Ball').x, VelPoint.y - WorldModel.get_pose('Ball').y, 0) 
                 ballKeepVector = Pose(WorldModel.get_pose('Role_0').x - WorldModel.get_pose('Ball').x, WorldModel.get_pose('Role_0').y - WorldModel.get_pose('Ball').y, 0) 
@@ -328,8 +344,6 @@ class WorldModel(object):
                     if EnemyDist < MinEnemyDist: 
                         MinEnemyDist = EnemyDist 
                         target = enemy_pose
-
-                # rospy.logerr(' v p '+str(WorldModel.get_velocity('Ball'))) 
         else:#ボールに速度がない 
             #脅威マシンの角度と角速度を計算 
             angleOfEnemy = WorldModel.get_pose('Threat_0').theta
@@ -376,17 +390,14 @@ class WorldModel(object):
                     else: 
                         base = AnglePoint 
                         target = WorldModel.get_pose('Ball') 
-                    # rospy.logerr('nv s straight') 
                 else:#横からシュート（打ち分けがきかない） 
                     base = AnglePoint
                     target = WorldModel.get_pose('Ball') 
-                    # rospy.logerr('nv s side') 
                     # p1=Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y+1,0) 
                     # p2=Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y-1,0) 
             elif GoalDist <= constants.GoalHalfSize + 0.5:#いつでもシュートをできそうにしている(1次シュート対策広めに取って2次シュート対策ディフェンダーに任せる) 
                 base = WorldModel.get_pose('CONST_OUR_GOAL') 
                 target = WorldModel.get_pose('Ball') 
-                # rospy.logerr('nv s if') 
             else:#今すぐシュートはできない 
                 #脅威マシン角度線に最も近い敵を探索 
                 MinEnemyDist = 15 
@@ -419,26 +430,21 @@ class WorldModel(object):
                     if (angles_sort[0] == 1 and angleSpeedOfEnemy < -0.01) or (angles_sort[2] == 1 and angleSpeedOfEnemy >= 0.01):#ゴール角最小で角速度大きくマイナスまたはゴール角最大で角速度大きくプラス（角速度大きくゴール方向）しきい値3radps 
                         base = WorldModel.get_pose('CONST_OUR_GOAL') 
                         target = WorldModel.get_pose('Ball') 
-                        # rospy.logerr('nv ns mp asg') 
                     else:#パス角に収束しそう 
                         base = WorldModel.get_pose('CONST_OUR_GOAL') 
                         target = WorldModel.get_pose('Ball') 
                         #target = WorldModel.get_pose('Enemy_'+str(EnemyIndex)) 
-                        # rospy.logerr('nv ns mp asp') 
                 elif angles_sort[1] == 1:#真ん中がゴール角のケース 
                     base = WorldModel.get_pose('CONST_OUR_GOAL') 
                     target = WorldModel.get_pose('Ball') 
-                    # rospy.logerr('nv ns mg') 
                 else :#真ん中がスレッド角のケース(シュートもできるしパスもできる) 
                     if (angles_sort[0] == 1 and angleSpeedOfEnemy < 0.5) or (angles_sort[2] == 1 and angleSpeedOfEnemy >= -0.5):#ゴール角最小で角速度マイナスまたはゴール角最大で角速度プラス（角速度ゴール方向） 
                         base = WorldModel.get_pose('CONST_OUR_GOAL') 
                         target = WorldModel.get_pose('Ball') 
-                        # rospy.logerr('nv ns me asg') 
                     elif (angles_sort[0] == 2 and angleSpeedOfEnemy < -0.5) or (angles_sort[2] == 2 and angleSpeedOfEnemy >= 0.5):#パス角最小で角速度マイナスまたはパス角最大で角速度プラス（角速度パス方向） 
                         base = WorldModel.get_pose('CONST_OUR_GOAL') 
                         target = WorldModel.get_pose('Ball') 
                         #target = WorldModel.get_pose('Enemy_'+str(EnemyIndex)) 
-                        # rospy.logerr('nv ns me asp')        
                     else :
                         base = WorldModel.get_pose('CONST_OUR_GOAL') 
                         target = WorldModel.get_pose('Ball')   
