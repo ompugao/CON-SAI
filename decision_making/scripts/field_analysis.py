@@ -227,6 +227,7 @@ class FieldAnalysis(object):
     def Score_Goal(cls):  #ボールとゴールの直線を評価して、敵がいなければシュート！
         from world_model import WorldModel
         i = 12#18
+        for k in range(-1,2,1):#6,7
             nearest_Dist = 10 #最も小さい値を入れたいので、初期値とりあえず大きい数字を定義しただけ
             for enemy_num in range(len(WorldModel.enemy_assignments)):
                 #rospy.logerr(WorldModel.get_pose('Enemy_'+str(enemy_num)))
