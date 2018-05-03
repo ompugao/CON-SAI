@@ -44,37 +44,41 @@ class Admiral(object):
         return situation in self.situations
 
     def reset(self, ):
-        self.last_situation = ""
         self.finish_keeping_play = (lambda : True)
-        self.current_play = PlayDummy()
         import gc
         gc.collect()
 
-    def select_play(self, current_situation):
-        if self.current_play.name == "PlayDummy" or \
+    def select_play(self, current_play, current_situation):
+        selected_play = None
+        selected_play_ended_func = None
+        if current_play.name == "PlayDummy" or \
                 (callable(self.finish_keeping_play) and self.finish_keeping_play()):
-            if self.last_situation != current_situation:
-                self.reset()
-                if current_situation is 'IN_PLAY':
-                    self.current_play, self.finish_keeping_play = self.select_play_inplay()
-                elif current_situation is 'BALL_IN_OUR_DEFENCE':
-                    self.current_play, self.finish_keeping_play = self.select_play_ball_in_our_defence()
-                elif current_situation is 'BALL_IN_THEIR_DEFENCE':
-                    self.current_play, self.finish_keeping_play = self.select_play_ball_in_their_defence()
-                elif current_situation is 'OUR_INDIRECT':
-                    self.current_play, self.finish_keeping_play = self.select_play_our_indirect()
-                elif current_situation is 'OUR_DIRECT':
-                    self.current_play, self.finish_keeping_play = self.select_play_our_direct()
-        self.last_situation = current_situation
-
-        return self.current_play
+            #rospy.logwarn("reset called in %s"%(current_situation))
+            if current_situation is 'IN_PLAY':
+                selected_play, selected_play_ended_func = self.select_play_inplay()
+            elif current_situation is 'BALL_IN_OUR_DEFENCE':
+                selected_play, selected_play_ended_func = self.select_play_ball_in_our_defence()
+            elif current_situation is 'BALL_IN_THEIR_DEFENCE':
+                selected_play, selected_play_ended_func = self.select_play_ball_in_their_defence()
+            elif current_situation is 'OUR_INDIRECT':
+                selected_play, selected_play_ended_func = self.select_play_our_indirect()
+            elif current_situation is 'OUR_DIRECT':
+                selected_play, selected_play_ended_func = self.select_play_our_direct()
+        if selected_play is None:
+            return current_play
+        if selected_play.__class__ is not current_play.__class__:
+            rospy.logwarn("play changed by admiral %s -> %s"%(current_play.__class__, selected_play.__class__))
+            self.finish_keeping_play = selected_play_ended_func
+            return selected_play
+        else:
+            return current_play
 
     def select_play_inplay(self, ):
         ball_holder = self.get_ball_holder(dist_threshold=0.2)
-        rospy.logdebug("current ball holder: %s"%(ball_holder,))
-        if ball_holder is constants.Teams.ENEMY:
-            play_super_protective = PlaySuperProtective()
-            return play_super_protective, (lambda: True)
+        # rospy.logdebug("current ball holder: %s"%(ball_holder,))
+        # if ball_holder is constants.Teams.ENEMY:
+        #     play_super_protective = PlaySuperProtective()
+        #     return play_super_protective, (lambda: True)
         return PlayInPlay(), (lambda: True)
 
     def select_play_ball_in_our_defence(self, ):

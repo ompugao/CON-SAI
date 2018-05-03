@@ -89,7 +89,7 @@ class PlayExecuter(object):
                 rospy.logwarn("No Play is registered to the situation, named %s", current_situation)
                 self._play = PlayDummy()
         else:
-            self._play = self._admiral.select_play(current_situation)
+            self._play = self._admiral.select_play(self._play, current_situation)
 
         # just in case
         if self._play is None:
