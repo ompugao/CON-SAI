@@ -31,6 +31,9 @@ class WithKickIfLookingAt(Task):
     def run(self):
         target_pose = WorldModel.get_pose(self._target)
         role_pose = WorldModel.get_pose(self._my_role)
+        if role_pose is None or target_pose is None:
+            return TaskStatus.RUNNING
+
         t = tool.Trans(role_pose, role_pose.theta)
         target_pose_local = t.transform(target_pose)
 
