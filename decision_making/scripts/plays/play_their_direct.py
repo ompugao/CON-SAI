@@ -39,7 +39,7 @@ class PlayTheirDirect(Play):
 
         #ranging
         num_enemies = 6
-        if WorldModel.get_pose('Enemy_1') is not None:
+        if WorldModel.get_pose('Enemy_1') is not None and  WorldModel.get_pose('Ball') is not None:
             goal_pose = WorldModel.get_pose('CONST_OUR_GOAL')
             ball_pose = WorldModel.get_pose('Ball')
             ranging = []
