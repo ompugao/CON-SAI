@@ -10,13 +10,12 @@
     <param name="team_side" type="string" value="$(arg side)" />
     <param name="goalie_id" type="int" value="$(arg goalie_id)" />
 
-    <!--<include file="$(find ai_core)/launch/simulator.launch" />-->
-    <include file="$(find ai_core)/launch/real.launch" /> 
+    <include file="$(find ai_core)/launch/simulator.launch" />
+    <!-- <include file="$(find ai_core)/launch/real.launch" /> -->
 
     <!-- Run Refbox -->
     <node name="refbox" pkg="ssl_refbox_wrapper" type="ssl_refbox_wrapper_node.py">
-      <param name="multicast_addr" value="224.5.23.200" />
-      <!--<param name="multicast_addr" value="224.5.23.1" />-->
+      <param name="multicast_addr" value="224.5.23.1" />
       <param name="multicast_port" value="10003" />
     </node>
 
@@ -33,7 +32,7 @@
     </node>
 
     <!-- launch Decision maker -->
-    <node name="decision_maker" pkg="decision_making" type="decision_making_node.py" output="screen" respawn="true" launch-prefix="xterm -fn 12x24 -e " >
+    <node name="decision_maker" pkg="decision_making" type="decision_making_node.py" output="screen" respawn="true">
       <env name="ROS_PYTHON_LOG_CONFIG_FILE" value="$(find ai_core)/config/python_logging_debug.conf"/>
       <param name="debug_publishing" value="true"/>
     </node>

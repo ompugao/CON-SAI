@@ -91,7 +91,7 @@ Controller::Controller(const ros::NodeHandle& nh)
     mRotationDirec = 1.0;
     mCentrifugalLimit = 0.01;
 
-    mPid.initPid(2.0, 0.0, 0.1, 100*mMaxRotation, -100*mMaxRotation, nh);
+    mPid.initPid(4.0, 0.0, 0.1, 100*mMaxRotation, -100*mMaxRotation, nh);
 }
 
 void Controller::update(){
@@ -136,7 +136,7 @@ void Controller::callbackReconfigure(trapezoidal_control::parameterConfig &confi
     mMaxRotation = config.maxRotation;
     mDecRotationGain = config.decRotationGain;
     mCentrifugalLimit = config.centrifugalLimit;
-    mPid.setGains(2.0, 0.0, 0.1, 100*mMaxRotation, -100*mMaxRotation);
+    mPid.setGains(4.0, 0.0, 0.1, 100*mMaxRotation, -100*mMaxRotation);
 }
 
 void Controller::callbackAIStatus(const consai_msgs::AIStatus& msg){

@@ -77,13 +77,7 @@ def get_intersection(pose1, pose2, pose3, pose4):
     s2 = ((pose4.x - pose3.x) * (pose3.y - pose2.y) \
             - (pose4.y - pose3.y) * (pose3.x - pose2.x)) / 2.0
 
-    try:
-        coefficient = s1 / (s1 + s2)
-    except Exception as e:
-        print("Error occurred!!! %s"%(e))
-        print(e)
-        from IPython.terminal import embed; ipshell=embed.InteractiveShellEmbed(config=embed.load_default_config())(local_ns=locals())
-
+    coefficient = s1 / (s1 + s2)
 
     output = Pose(0,0,0)
     output.x = pose1.x + (pose2.x - pose1.x) * coefficient

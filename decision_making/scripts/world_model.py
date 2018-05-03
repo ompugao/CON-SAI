@@ -737,8 +737,6 @@ class WorldModel(object):
         if WorldModel._current_refbox_command.endswith('START') or \
                 WorldModel._current_refbox_command.endswith('DIRECT'):
             if WorldModel._observer.ball_is_moved(ball_pose):
-                ball_vel = WorldModel.get_velocity("Ball")
-                rospy.logwarn("current ball- pos: %f %f %f  vel: %f %f %f"%(ball_pose.x, ball_pose.y, ball_pose.theta, ball_vel.x, ball_vel.y, ball_vel.theta))
                 WorldModel._current_refbox_command = 'IN_PLAY'
         else:
             WorldModel._observer.set_ball_initial_pose(ball_pose)

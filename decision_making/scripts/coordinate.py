@@ -29,7 +29,7 @@ class Coordinate(object):
 
         # arrival parameters
         self._arrived_position_tolerance = 0.1 # unit:meter
-        self._arrived_angle_tolerance = np.deg2rad(0.9) #3.0 * math.pi / 180.0
+        self._arrived_angle_tolerance = np.deg2rad(0.5) #3.0 * math.pi / 180.0
 
         # interpose
         self._to_dist = None

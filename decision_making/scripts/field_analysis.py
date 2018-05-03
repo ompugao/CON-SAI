@@ -143,10 +143,10 @@ class FieldAnalysis(object):
             b_power = 1.6 #キックパワーのバイアス
             kick_power = (dist * k_power) + b_power
             #kick_power = 0.5 * dist #係数 * ボールの距離
-            if kick_power > 11:    #最大powerが8
-                kick_power = 12
+            if kick_power > 8:    #最大powerが8
+                kick_power = 8
             if xnum == 12:    #座標がゴールの場合は全力でシュート！！
-                kick_power = 12
+                kick_power = 8
             
             WorldModel.commands['Role_1'].set_kick(kick_power)
             #rospy.logerr(kick_power)
@@ -249,7 +249,7 @@ class FieldAnalysis(object):
     def update_field_analysis(cls): #ここで各エリアの点数付を行う
         from world_model import WorldModel
 
-        if WorldModel.get_pose('Role_1') is None or WorldModel.get_pose('Ball') is None:#最初データがヴィジョンから送られてこない。だからそれを無視するプログラム。無いとエラー出る。
+        if WorldModel.get_pose('Role_1') is None or WorldModel.get_pose('Ball') is None or WorldModel.get_pose('Enemy_1') is None:#最初データがヴィジョンから送られてこない。だからそれを無視するプログラム。無いとエラー出る。
             return None
         
         for i in range(-((FieldAnalysis.xgrid-1)/2),((FieldAnalysis.xgrid-1)/2)+1,1):
