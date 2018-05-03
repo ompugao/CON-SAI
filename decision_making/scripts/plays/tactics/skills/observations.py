@@ -38,6 +38,8 @@ class BallInside(Task):
 
     def run(self):
         ball_pose = WorldModel.get_pose('Ball')
+        if ball_pose is None:
+            return TaskStatus.RUNNING
         if self.receiving_area[0] < ball_pose.x < self.receiving_area[2] \
                 and self.receiving_area[1] < ball_pose.y < self.receiving_area[3]:
             return TaskStatus.SUCCESS
@@ -53,10 +55,12 @@ class BallReceived(Task):
     def run(self):
         my_pose = WorldModel.get_pose(self.my_role)
         ball_pose = WorldModel.get_pose('Ball')
+        if ball_pose is None:
+            return TaskStatus.RUNNING
         ball_velocity = WorldModel.get_velocity('Ball')
         vel_abs = tool.getLengthFromCenter(ball_velocity)
-        print(tool.getLength(my_pose, ball_pose))
-        print(vel_abs)
+        # print(tool.getLength(my_pose, ball_pose))
+        # print(vel_abs)
         if (tool.getLength(my_pose, ball_pose) < self.dist_threshold + constants.BallRadius + constants.RobotRadius) \
                 and vel_abs < self.velocity_threshold:
             return TaskStatus.SUCCESS
