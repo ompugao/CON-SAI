@@ -32,6 +32,9 @@ class TacticReceiveBallAtAndShoot(Sequence):
             _my_role = my_role
             def condition():
                 ball_pose = WorldModel.get_pose('Ball')
+                if ball_pose is None:
+                    return False
+
                 if _receiving_area[0] < ball_pose.x < _receiving_area[2] \
                         and _receiving_area[1] < ball_pose.y < _receiving_area[3]:
                     rospy.logdebug("%s will take ball!"%(_my_role))

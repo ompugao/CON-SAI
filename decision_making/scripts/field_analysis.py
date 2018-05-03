@@ -243,7 +243,7 @@ class FieldAnalysis(object):
     def update_field_analysis(cls): #ここで各エリアの点数付を行う
         from world_model import WorldModel
 
-        if WorldModel.get_pose('Role_1') is None or WorldModel.get_pose('Ball') is None or WorldModel.get_pose('Enemy_1'):#最初データがヴィジョンから送られてこない。だからそれを無視するプログラム。無いとエラー出る。
+        if WorldModel.get_pose('Role_1') is None or WorldModel.get_pose('Ball') is None or WorldModel.get_pose('Enemy_1') is None:#最初データがヴィジョンから送られてこない。だからそれを無視するプログラム。無いとエラー出る。
             return None
         
         for i in range(-((FieldAnalysis.xgrid-1)/2),((FieldAnalysis.xgrid-1)/2)+1,1):

@@ -251,16 +251,27 @@ class Coordinate(object):
     def _update_position_looking_at_target(self,):
         target_pose = WorldModel.get_pose(self._target)
         role_pose = WorldModel.get_pose(self._my_role)
-        angle = tool.getAngle(role_pose, target_pose)
-        self._pose.theta = angle
-        return True
+        if target_pose is not None and role_pose is not None:
+            angle = tool.getAngle(role_pose, target_pose)
+            self._pose.theta = angle
+            return True
+        else:
+            return False
 
     def _update_dynamic_position_looking_at_target(self,):
+        self._pose = WorldModel.get_pose(self._pose_name)
+        if self._pose is None:
+            rospy.logdebug("invalid dynamic pose")
+            return False
+
         target_pose = WorldModel.get_pose(self._target)
         role_pose = WorldModel.get_pose(self._my_role)
-        angle = tool.getAngle(role_pose, target_pose)
-        self._pose = WorldModel.get_pose(self._pose_name)
-        self._pose.theta = angle
+        if target_pose is not None and role_pose is not None:
+            angle = tool.getAngle(role_pose, target_pose)
+            self._pose.theta = angle
+        else:
+            return False
+
         return True
 
     def _update_interpose(self):
@@ -460,7 +471,9 @@ class Coordinate(object):
         ball_vel = WorldModel.get_velocity('Ball')
         result = False
 
-        if WorldModel._observer.ball_is_moving(WorldModel.get_velocity('Ball')):
+        if ball_vel is not None and WorldModel._observer.ball_is_moving(ball_vel):
+            if ball_pose is None:
+                return False
             angle_velocity = tool.getAngleFromCenter(ball_vel)
             trans = tool.Trans(ball_pose, angle_velocity)
 

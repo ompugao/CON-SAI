@@ -44,6 +44,8 @@ class TacticCornerKick(Sequence):
 
                     # check pass course
                     ball_pose = WorldModel.get_pose('Ball')
+                    if ball_pose is None:
+                        return False
                     a                = np.array([target_pose.x - ball_pose.x, target_pose.y - ball_pose.y])
                     a_length         = np.linalg.norm(a)
                     squared_a_length = np.dot(a, a)
@@ -72,6 +74,8 @@ class TacticCornerKick(Sequence):
                 def kick_options_func():
                     target_pose = WorldModel.get_pose(_target_role)
                     ball_pose = WorldModel.get_pose('Ball')
+                    if ball_pose is None:
+                        return False
                     a                = np.array([target_pose.x - ball_pose.x, target_pose.y - ball_pose.y])
                     a_length         = np.linalg.norm(a)
                     squared_a_length = np.dot(a, a)
