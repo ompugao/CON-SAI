@@ -315,14 +315,20 @@ class WorldModel(object):
                 # p2=Pose(WorldModel.get_pose('Ball').x,WorldModel.get_pose('Ball').y-1,0) 
             else:#パスっぽい 
                 #ボールの速度線に最も近い敵を探索 
-                MinEnemyDist = 15 
-                for enemy_num in range (0,len(WorldModel.enemy_assignments)): 
-                    EnemyDist = WorldModel.dotLineDist(WorldModel.get_pose('Enemy_'+str(enemy_num)).x+WorldModel.get_pose('Enemy_'+str(enemy_num)).y*1j,(WorldModel.get_pose('Ball').x+WorldModel.get_pose('Ball').y*1j,VelPoint.x+VelPoint.y*1j)) 
+                MinEnemyDist = 15
+                target = WorldModel.get_pose('Ball')
+                base = WorldModel.get_pose('CONST_OUR_GOAL')
+                for enemy_num in range (0,len(WorldModel.enemy_assignments)):
+                    enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
+                    if enemy_pose is None:
+                        continue
+                    
+                    EnemyDist = WorldModel.dotLineDist(enemy_pose.x+enemy_pose.y*1j,(WorldModel.get_pose('Ball').x+WorldModel.get_pose('Ball').y*1j,VelPoint.x+VelPoint.y*1j)) 
+                    
                     if EnemyDist < MinEnemyDist: 
                         MinEnemyDist = EnemyDist 
-                        EnemyIndex = enemy_num 
-                base = WorldModel.get_pose('CONST_OUR_GOAL') 
-                target = WorldModel.get_pose('Enemy_'+str(EnemyIndex)) 
+                        target = enemy_pose
+
                 # rospy.logerr(' v p '+str(WorldModel.get_velocity('Ball'))) 
         else:#ボールに速度がない 
             #脅威マシンの角度と角速度を計算 
@@ -384,13 +390,22 @@ class WorldModel(object):
             else:#今すぐシュートはできない 
                 #脅威マシン角度線に最も近い敵を探索 
                 MinEnemyDist = 15 
+                base = WorldModel.get_pose('CONST_OUR_GOAL')
+                target = WorldModel.get_pose('Ball')
                 for enemy_num in range (0,len(WorldModel.enemy_assignments)): 
-                    EnemyDist = WorldModel.dotLineDist(WorldModel.get_pose('Enemy_'+str(enemy_num)).x+WorldModel.get_pose('Enemy_'+str(enemy_num)).y*1j,(WorldModel.get_pose('Threat_0').x+WorldModel.get_pose('Threat_0').y*1j,AnglePoint.x+AnglePoint.y*1j)) 
+
+                    enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
+                    if enemy_pose is None:
+                        continue
+                    
+                    EnemyDist = WorldModel.dotLineDist(enemy_pose.x+enemy_pose.y*1j,(WorldModel.get_pose('Threat_0').x+WorldModel.get_pose('Threat_0').y*1j,AnglePoint.x+AnglePoint.y*1j)) 
+                    
                     if EnemyDist < MinEnemyDist: 
                         MinEnemyDist = EnemyDist 
-                        EnemyIndex = enemy_num  
+                        target = enemy_pose
+                        
                 #脅威マシンと推定パス対象マシンのなす角を計算 
-                angleOfEnemyToEnemy = math.atan2(WorldModel.get_pose('Enemy_'+str(EnemyIndex)).y-WorldModel.get_pose('Threat_0').y, WorldModel.get_pose('Enemy_'+str(EnemyIndex)).x-WorldModel.get_pose('Threat_0').x) 
+                angleOfEnemyToEnemy = math.atan2(target.y-WorldModel.get_pose('Threat_0').y, target.x-WorldModel.get_pose('Threat_0').x) 
                 #3つの角度を配列に代入 
                 angles = [0,0,0] 
                 angles[0] = angleOfEnemy 
@@ -450,13 +465,19 @@ class WorldModel(object):
             else :#パスっぽい 
                 #ボールの速度線に最も近い敵を探索 
                 MinEnemyDist = 15 
+                base = 'Threat_0'
+                target = 'Ball'
                 for enemy_num in range (0,len(WorldModel.enemy_assignments)): 
-                    EnemyDist = WorldModel.dotLineDist(WorldModel.get_pose('Enemy_'+str(enemy_num)).x+WorldModel.get_pose('Enemy_'+str(enemy_num)).y*1j,(WorldModel.get_pose('Ball').x+WorldModel.get_pose('Ball').y*1j,VelPoint.x+VelPoint.y*1j)) 
+                    enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
+                    if enemy_pose is None:
+                        continue
+                    
+                    EnemyDist = WorldModel.dotLineDist(enemy_pose.x+enemy_pose.y*1j,(WorldModel.get_pose('Ball').x+WorldModel.get_pose('Ball').y*1j,VelPoint.x+VelPoint.y*1j)) 
+                    
                     if EnemyDist < MinEnemyDist: 
                         MinEnemyDist = EnemyDist 
-                        EnemyIndex = enemy_num 
-                base = 'Threat_0'
-                target = 'Enemy_'+str(EnemyIndex)
+                        target = 'Enemy_'+str(enemy_num)
+
         else :#ボールに速度がない 
             #脅威マシンの角度と角速度を計算 
             angleOfEnemy = WorldModel.get_pose('Threat_0').theta#敵なので反転np.pi- 
@@ -481,13 +502,21 @@ class WorldModel(object):
             else: 
                 #脅威マシン角度線に最も近い敵を探索 
                 MinEnemyDist = 15 
+                base = 'Threat_0'
+                target = 'Ball'
                 for enemy_num in range (0,len(WorldModel.enemy_assignments)): 
-                    EnemyDist = WorldModel.dotLineDist(WorldModel.get_pose('Enemy_'+str(enemy_num)).x+WorldModel.get_pose('Enemy_'+str(enemy_num)).y*1j,(WorldModel.get_pose('Threat_0').x+WorldModel.get_pose('Threat_0').y*1j,AnglePoint.x+AnglePoint.y*1j)) 
+
+                    enemy_pose = WorldModel.get_pose('Enemy_'+str(enemy_num))
+                    if enemy_pose is None:
+                        continue
+                    
+                    EnemyDist = WorldModel.dotLineDist(enemy_pose.x+enemy_pose.y*1j,(WorldModel.get_pose('Threat_0').x+WorldModel.get_pose('Threat_0').y*1j,AnglePoint.x+AnglePoint.y*1j)) 
+                    
                     if EnemyDist < MinEnemyDist: 
                         MinEnemyDist = EnemyDist 
-                        EnemyIndex = enemy_num  
-                base = 'Threat_0'
-                target = 'Enemy_'+str(EnemyIndex) 
+                        target = 'Enemy_'+str(enemy_num)
+ 
+
         return base,target 
 
 

@@ -38,18 +38,27 @@ class PlayTheirIndirect(Play):
         #             from_dist = 1.0)
         #         )
 
-        #ranging
-        ranging = np.zeros(6)
-        ranging_sort=[0, 1, 2, 3, 4, 5]
+        num_enemies = 6
         if WorldModel.get_pose('Enemy_1') is not None:
-            for i in range(0,6):
+            goal_pose = WorldModel.get_pose('CONST_OUR_GOAL')
+            ball_pose = WorldModel.get_pose('Ball')
+            ranging = []
+            for i in range(0, num_enemies):
                 enemy_pose = WorldModel.get_pose('Enemy_%d'%(i))
-                ranging[i]=math.hypot(enemy_pose.x-WorldModel.get_pose('CONST_OUR_GOAL').x, enemy_pose.y-WorldModel.get_pose('CONST_OUR_GOAL').y)+math.hypot(enemy_pose.x-WorldModel.get_pose('Ball').x, enemy_pose.y-WorldModel.get_pose('Ball').y)
-                rospy.logerr('ranging'+str(i)+':'+str(ranging[i]))
+                if enemy_pose is None:
+                    continue
+
+                ranging.append( math.hypot(enemy_pose.x-goal_pose.x, enemy_pose.y-goal_pose.y) + math.hypot(enemy_pose.x-ball_pose.x, enemy_pose.y-ball_pose.y) )
+                #rospy.logerr('ranging'+str(i)+':'+str(ranging[i]))
+            num_missing_enemies = num_enemies - len(ranging)
+            for i in range(num_missing_enemies):
+                ranging.append(np.inf)
             #sort_index
             ranging_sort = ranging.argsort()
-            for i in range(0,6):
-                rospy.logerr('sort'+str(i)+':'+str(ranging_sort[i]))
+            # for i in range(0,6):
+            #     rospy.logerr('sort'+str(i)+':'+str(ranging_sort[i]))
+        else:
+            ranging_sort = np.array(range(num_enemies))
         #mark
         for i in range(1,4):
             self.roles[i].loop_enable = True
