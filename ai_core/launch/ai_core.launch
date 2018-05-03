@@ -10,8 +10,8 @@
     <param name="team_side" type="string" value="$(arg side)" />
     <param name="goalie_id" type="int" value="$(arg goalie_id)" />
 
-    <!-- <include file="$(find ai_core)/launch/simulator.launch" /> -->
-    <include file="$(find ai_core)/launch/real.launch" />
+    <include file="$(find ai_core)/launch/simulator.launch" />
+    <!-- <include file="$(find ai_core)/launch/real.launch" /> -->
 
     <!-- Run Refbox -->
     <node name="refbox" pkg="ssl_refbox_wrapper" type="ssl_refbox_wrapper_node.py">
