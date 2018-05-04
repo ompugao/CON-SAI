@@ -53,7 +53,6 @@ class TacticInplayReceiveAndShoot(Sequence):
 
         SHOOT = ParallelOne('SHOOT')
         SHOOT.add_child(DynamicDrive('drive_to_shoot', my_role, coord, always_running = True))
-        DRIVE.add_child(WithKickIfLookingAt('WithKickIfLookingAt', my_role, 'ANALY_PATH', np.deg2rad(0.5)))
         SHOOT.add_child(NoBallAvoidance('NoBallAvoidance', my_role))
         SHOOT.add_child(BallKicked('BallKicked', 0.05))
         SHOOT.add_child(WithDefenceAreaAvoidance('AvoidDefenceArea', my_role))
