@@ -27,6 +27,7 @@ from geometry_msgs.msg import PoseStamped, TwistStamped
 from geometry_msgs.msg import Point
 from consai_msgs.msg import GeometryFieldSize, FieldLineSegment, FieldCircularArc
 from consai_msgs.msg import ReplaceBall, ReplaceRobot
+from consai_msgs.msg import robot_commands
 
 from geometry import Geometry
 
@@ -93,6 +94,7 @@ class PaintWidget(QWidget):
         self.bestPassingPointDrawColor = QColor(253, 0, 234, 100)
         self.bestReceivingPointDrawColor = QColor(66, 35, 222, 100)
         self.keepTargetPointDrawColor = QColor(255, 100, 100, 100)
+        self.kickingRobotDrawColor = QColor(237, 7, 171, 255)
 
         # Replace
         self._CLICK_POS_THRESHOLD = 0.1
@@ -129,24 +131,27 @@ class PaintWidget(QWidget):
         self.sub_friendsID = rospy.Subscriber("existing_friends_id", 
                 UIntArray, self.callbackFriendsID)
 
-        self.friendOdoms = [Odometry()] * 12
+        self.friendOdoms = [Odometry()] * 16
         self.sub_friendOdoms = []
 
         self.enemyIDArray = UIntArray()
         self.sub_enemiesID = rospy.Subscriber("existing_enemies_id",
                 UIntArray, self.callbackEnemiesID)
 
-        self.enemyOdoms = [Odometry()] * 12
+        self.enemyOdoms = [Odometry()] * 16
         self.sub_enemyOdoms = []
 
-        self.targetPositions = [PoseStamped()] * 12
+        self.targetPositions = [PoseStamped()] * 16
         self.sub_targetPositions =[]
-        self.targetVelocities = [TwistStamped()] * 12
+        self.targetVelocities = [TwistStamped()] * 16
         self.sub_targetVelocities = []
-        self.targetIsPosition = [False] * 12
+        self.targetIsPosition = [False] * 16
 
-        self.avoidingPoints = [Point()] * 12
+        self.avoidingPoints = [Point()] * 16
         self.sub_avoidingPoints = []
+        
+        self.current_robot_commands = [robot_commands()] * 16
+        self.sub_robot_commands = []
 
         for i in xrange(12):
             strID = str(i)
@@ -155,6 +160,7 @@ class PaintWidget(QWidget):
             topicPosition = "robot_" + strID + "/move_base_simple/goal"
             topicVelocity = "robot_" + strID + "/move_base_simple/target_velocity"
             topicAvoidingPoint = "robot_" + strID + "/avoiding_point"
+            topicRobotCommand = "robot_" + strID + "/robot_commands"
 
             self.sub_friendOdoms.append(
                     rospy.Subscriber(topicFriend, Odometry, 
@@ -175,6 +181,9 @@ class PaintWidget(QWidget):
             self.sub_avoidingPoints.append(
                     rospy.Subscriber(topicAvoidingPoint, Point,
                         self.callbackAvoidingPoint, callback_args=i))
+            self.sub_robot_commands.append(
+                    rospy.Subscriber(topicRobotCommand, robot_commands,
+                        self.callbackRobotCommands, callback_args=i))
         self.sub_best_passing_pose = rospy.Subscriber('best_passing_pose', PoseStamped, self.callbackBestPassingPose)
         self.sub_best_receiving_pose = rospy.Subscriber('best_receiving_pose', PoseStamped, self.callbackBestReceivingPose)
         self.sub_keep_base_pose = rospy.Subscriber('keep_base_pose', PoseStamped, self.callbackKeepBasePose)
@@ -229,6 +238,9 @@ class PaintWidget(QWidget):
     def callbackAvoidingPoint(self, msg, robot_id):
         self.avoidingPoints[robot_id] = msg
 
+    def callbackRobotCommands(self, msg, robot_id):
+        self.current_robot_commands[robot_id] = msg
+        
     def callbackBestReceivingPose(self, msg):
         self.best_receiving_pose = msg.pose
 
@@ -662,16 +674,18 @@ class PaintWidget(QWidget):
     def drawFriends(self, painter):
         for robot_id in self.friendsIDArray.data:
             self.drawRobot(painter, robot_id, 
-                    self.friendOdoms[robot_id], self.friendDrawColor)
+                    self.friendOdoms[robot_id],
+                    self.current_robot_commands[robot_id],
+                    self.friendDrawColor)
 
 
     def drawEnemis(self, painter):
         for robot_id in self.enemyIDArray.data:
             self.drawRobot(painter, robot_id,
-                    self.enemyOdoms[robot_id], self.enemyDrawColor)
+                    self.enemyOdoms[robot_id], None, self.enemyDrawColor)
 
 
-    def drawRobot(self, painter,robot_id, odom, color):
+    def drawRobot(self, painter,robot_id, odom, robot_command, color):
         # draw robot body on its position
         posX = odom.pose.pose.position.x
         posY = odom.pose.pose.position.y
@@ -697,6 +711,15 @@ class PaintWidget(QWidget):
         textPosY = 0.15
         textPoint = point + self.convertToDrawWorld(textPosY, textPosY)
         painter.drawText(textPoint, str(robot_id))
+        if robot_command is not None:
+            painter.drawText(point + self.convertToDrawWorld(0.15, 0), 'kick: %.1f'%(robot_command.kick_speed_x))
+            painter.drawText(point + self.convertToDrawWorld(0.15, -0.15), 'chip: %.1f'%(robot_command.kick_speed_z))
+            if robot_command.kick_speed_x > 0.0:
+                size = self.geometry.ROBOT_RADIUS * 0.7 * self.scaleOnField
+                painter.setPen(Qt.black)
+                painter.setBrush(self.kickingRobotDrawColor)
+                painter.drawEllipse(point, size, size)
+
 
 
     def drawTargets(self, painter):
