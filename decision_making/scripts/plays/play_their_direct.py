@@ -25,12 +25,9 @@ class PlayTheirDirect(Play):
                     range_high = constants.GoalHalfSize,
                     range_low = -constants.GoalHalfSize)
                 )
-
-        # self.roles[1].loop_enable = True
-        # self.roles[1].behavior.add_child(
-        #         TacticInterpose('TacticInterpose', self.roles[1].my_role, 
-        #             from_dist = 0.5)
-        #         )
+        if WorldModel.get_pose('Ball') is not None:
+            self.roles[1].loop_enable = True
+            self.roles[1].behavior.add_child(TacticMark('TacticMark', self.roles[1].my_role,base='CONST_OUR_GOAL',target='Ball'))
         # self.roles[2].loop_enable = True
         # self.roles[2].behavior.add_child(
         #         TacticInterpose('TacticInterpose', self.roles[2].my_role, 
@@ -47,8 +44,10 @@ class PlayTheirDirect(Play):
                 enemy_pose = WorldModel.get_pose('Enemy_%d'%(i))
                 if enemy_pose is None:
                     continue
-
-                ranging.append( (i, math.hypot(enemy_pose.x-goal_pose.x, enemy_pose.y-goal_pose.y) + math.hypot(enemy_pose.x-ball_pose.x, enemy_pose.y-ball_pose.y)) )
+                if math.hypot(enemy_pose.x-ball_pose.x, enemy_pose.y-ball_pose.y)<1:
+                    ranging.append( (i, math.hypot(enemy_pose.x-goal_pose.x, enemy_pose.y-goal_pose.y) + 12) )
+                else:
+                    ranging.append( (i, math.hypot(enemy_pose.x-goal_pose.x, enemy_pose.y-goal_pose.y) ) )
                 #rospy.logerr('ranging'+str(i)+':'+str(ranging[i]))
             for i in range(len(ranging), num_enemies):
                 ranging.append( (i, np.inf) )
@@ -57,9 +56,9 @@ class PlayTheirDirect(Play):
         else:
             ranging_sort = np.array(range(num_enemies))
         #mark
-        for i in range(1,4):
+        for i in range(2,4):
             self.roles[i].loop_enable = True
-            self.roles[i].behavior.add_child(TacticMark('TacticMark', self.roles[i].my_role,base='CONST_OUR_GOAL',target='Enemy_'+str(ranging_sort[i-1])))
+            self.roles[i].behavior.add_child(TacticMark('TacticMark', self.roles[i].my_role,base='CONST_OUR_GOAL',target='Enemy_'+str(ranging_sort[i-2])))
 
 
         for i in range(4,6):
