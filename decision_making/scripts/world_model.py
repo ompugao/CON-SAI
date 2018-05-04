@@ -117,6 +117,7 @@ class WorldModel(object):
 
     _last_best_passing_pose = None
     _last_best_receiving_pose = None
+    _keep_base_pose = None
     _keep_target_pose = None
 
     _observer = Observer()
@@ -560,6 +561,7 @@ class WorldModel(object):
         elif name[:4]=='Keep': 
             if name == 'KeepBase': 
                 pose=WorldModel.KeepAnalysis()[0] 
+                WorldModel._keep_base_pose = pose
             elif name == 'KeepTarget': 
                 pose=WorldModel.KeepAnalysis()[1] 
                 WorldModel._keep_target_pose = pose
