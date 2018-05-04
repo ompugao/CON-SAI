@@ -70,7 +70,13 @@ def publish():
             pose_stamped.pose.position.y = WorldModel._last_best_receiving_pose.y
             pose_stamped.header.stamp = rospy.Time.now()
             best_receiving_pose_publisher.publish(pose_stamped)
-
+    if keep_target_pose_publisher is not None:
+        if WorldModel._keep_target_pose is not None:
+            pose_stamped = PoseStamped()
+            pose_stamped.pose.position.x = WorldModel._keep_target_pose.x
+            pose_stamped.pose.position.y = WorldModel._keep_target_pose.y
+            pose_stamped.header.stamp = rospy.Time.now()
+            keep_target_pose_publisher.publish(pose_stamped)
 
 
 def friendIDCallback(msg):
@@ -158,6 +164,7 @@ if __name__ == '__main__':
     if b_debug_publishing:
         best_passing_pose_publisher = rospy.Publisher('best_passing_pose', PoseStamped, queue_size=10)
         best_receiving_pose_publisher = rospy.Publisher('best_receiving_pose', PoseStamped, queue_size=10)
+        keep_target_pose_publisher = rospy.Publisher('keep_target_pose', PoseStamped, queue_size=10)
 
     for robot_id in xrange(12):
         id_str = str(robot_id)
