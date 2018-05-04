@@ -78,6 +78,7 @@ class PaintWidget(QWidget):
 
         self.best_receiving_pose = None
         self.best_passing_pose = None
+        self.keep_base_pose = None
         self.keep_target_pose = None
 
         # Colors
@@ -176,6 +177,7 @@ class PaintWidget(QWidget):
                         self.callbackAvoidingPoint, callback_args=i))
         self.sub_best_passing_pose = rospy.Subscriber('best_passing_pose', PoseStamped, self.callbackBestPassingPose)
         self.sub_best_receiving_pose = rospy.Subscriber('best_receiving_pose', PoseStamped, self.callbackBestReceivingPose)
+        self.sub_keep_base_pose = rospy.Subscriber('keep_base_pose', PoseStamped, self.callbackKeepBasePose)
         self.sub_keep_target_pose = rospy.Subscriber('keep_target_pose', PoseStamped, self.callbackKeepTargetPose)
 
         # Publishers
@@ -232,6 +234,9 @@ class PaintWidget(QWidget):
 
     def callbackBestPassingPose(self, msg):
         self.best_passing_pose = msg.pose
+
+    def callbackKeepBasePose(self, msg):
+        self.keep_base_pose = msg.pose
 
     def callbackKeepTargetPose(self, msg):
         self.keep_target_pose = msg.pose
@@ -325,9 +330,13 @@ class PaintWidget(QWidget):
         if self.best_passing_pose is not None:
             self.drawPoint(painter, self.best_passing_pose.position, self.bestPassingPointDrawColor, text = 'passto')
         if self.best_receiving_pose is not None:
-            self.drawPoint(painter, self.best_receiving_pose.position, self.bestReceivingPointDrawColor, text = 'receive here')
+            self.drawPoint(painter, self.best_receiving_pose.position, self.bestReceivingPointDrawColor, text = 'receive here')   
         if self.keep_target_pose is not None:
             self.drawPoint(painter, self.keep_target_pose.position, self.keepTargetPointDrawColor, text = 'keep target')
+        if self.keep_base_pose is not None and self.keep_target_pose is not None:
+            painter.drawLine(self.convertToDrawWorld(self.keep_target_pose.position.x,self.keep_target_pose.position.y), self.convertToDrawWorld(self.keep_base_pose.position.x,self.keep_base_pose.position.y))
+
+
 
         if self._is_ballpos_replacement or self._is_robotpos_replacement:
             self.drawPosReplacement(painter)
