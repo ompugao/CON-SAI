@@ -14,7 +14,6 @@
     <node name="trapezoidal_control" pkg="trapezoidal_control" type="trapezoidal_control_node" />
 
     <node name="ai_controller" pkg="decision_making" type="ai_command_converter.py" />
-    <node name="velocity_transformer" pkg="velocity_transformer" type="velocity_transformer.py" />
 
   </group>
 
