@@ -399,7 +399,7 @@ double Controller::yawFromQuaternion(geometry_msgs::Quaternion geoQ){
     double roll, pitch, yaw;
     m.getRPY(roll, pitch, yaw);
 
-    if(isnan(yaw)){
+    if(std::isnan(yaw)){
         yaw = 0.0;
     }
     return yaw;
@@ -438,7 +438,7 @@ int main(int argc, char **argv){
         cmd_vel_publisher.publish(cmdVel);
 
         if (cmd_vel_transformed_publisher.getNumSubscribers() > 0) {
-            geometry_msgs::Twist cmdVelInWorld = Controller::getCommandVelocityInWorld();
+            geometry_msgs::Twist cmdVelInWorld = controller.getCommandVelocityInWorld();
             cmd_vel_transformed_publisher.publish(cmdVelInWorld);
         }
 
