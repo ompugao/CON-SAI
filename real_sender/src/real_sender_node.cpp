@@ -9,6 +9,7 @@
 #include	<sys/socket.h>
 #include	<netinet/in.h>
 #include    <arpa/inet.h>
+#include    <boost/format.hpp>
 #include    <boost/algorithm/clamp.hpp>
 
 class Sender
@@ -26,75 +27,15 @@ public:
         addr.sin_family = AF_INET;
         addr.sin_port = htons(12345);
 
-        /*if(id == 0)         addr.sin_addr.s_addr = inet_addr("192.168.15.10");
-        else if (id == 1)   addr.sin_addr.s_addr = inet_addr("192.168.15.11");
-        else if (id == 2)   addr.sin_addr.s_addr = inet_addr("192.168.15.12");
-        else if (id == 3)   addr.sin_addr.s_addr = inet_addr("192.168.15.13");
-        else if (id == 4)   addr.sin_addr.s_addr = inet_addr("192.168.15.14");
-        else if (id == 5)   addr.sin_addr.s_addr = inet_addr("192.168.15.15");
-        else if (id == 6)   addr.sin_addr.s_addr = inet_addr("192.168.15.16");
-        else if (id == 7)   addr.sin_addr.s_addr = inet_addr("192.168.15.17");
-        else if (id == 8)   addr.sin_addr.s_addr = inet_addr("192.168.15.18");
-        else if (id == 9)   addr.sin_addr.s_addr = inet_addr("192.168.15.19");
-        else if (id == 10)   addr.sin_addr.s_addr = inet_addr("192.168.15.20");
-        else if (id == 11)   addr.sin_addr.s_addr = inet_addr("192.168.15.21");
-        else                addr.sin_addr.s_addr = inet_addr("192.168.15.30");*/
+        int ip_suffix = id;
+        if (id < 0 || id > 12) {
+            ip_suffix = 20;
+        }
+        ip_suffix += 10;
+        std::string ipaddr = (boost::format("192.168.15.%2d")%(ip_suffix)).str();
+        addr.sin_addr.s_addr = inet_addr(ipaddr.c_str());
 
-        //for debug
-        if(id == 0){
-        	addr.sin_addr.s_addr = inet_addr("192.168.15.10");
-        	ROS_ERROR("Set ID_0 IPaddr");
-        }
-        else if (id == 1)  {
-            addr.sin_addr.s_addr = inet_addr("192.168.15.11");
-            ROS_ERROR("Set ID_1 IPaddr");
-        }
-        else if (id == 2){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.12");
-            ROS_ERROR("Set ID_2 IPaddr");
-        }
-        else if (id == 3){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.13");
-            ROS_ERROR("Set ID_3 IPaddr");
-        }
-        else if (id == 4){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.14");
-            ROS_ERROR("Set ID_4 IPaddr");
-        }
-        else if (id == 5){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.15");
-            ROS_ERROR("Set ID_5 IPaddr");
-        }
-        else if (id == 6){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.16");
-            ROS_ERROR("Set ID_6 IPaddr");
-        }
-        else if (id == 7){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.17");
-            ROS_ERROR("Set ID_7 IPaddr");
-        }
-        else if (id == 8){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.18");
-            ROS_ERROR("Set ID_8 IPaddr");
-        }
-        else if (id == 9){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.19");
-            ROS_ERROR("Set ID_9 IPaddr");
-        }
-        else if (id == 10){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.20");
-            ROS_ERROR("Set ID_10 IPaddr");
-        }
-        else if (id == 11){
-            addr.sin_addr.s_addr = inet_addr("192.168.15.21");
-            ROS_ERROR("Set ID_11 IPaddr");
-        }
-        else{
-            addr.sin_addr.s_addr = inet_addr("192.168.15.30");
-            ROS_ERROR("Set ID_x IPaddr");
-        }
-
-        ROS_ERROR("Set IPaddr");
+        ROS_INFO("Set Robot(%d) IPaddr to %s", mID_, ipaddr.c_str());
     }
     void callback(const consai_msgs::robot_commandsConstPtr& msg){
         ROS_INFO("before Send message");
@@ -112,8 +53,9 @@ public:
 
         char data[18];
         serializer.serialize(cmd, data);
-        if(mID_ == 0)
-	        ROS_ERROR("%d",data[2]);
+        if(mID_ == 0) {
+	        ROS_INFO("%d",data[2]);
+        }
 
         //for debug
         //if(mID_ == 0)
