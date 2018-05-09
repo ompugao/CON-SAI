@@ -28,6 +28,8 @@ class Controller{
         
         geometry_msgs::Twist getCommandVelocity();
         geometry_msgs::Point getAvoidingPoint();
+        geometry_msgs::Twist getCommandVelocityInWorld();
+
 
         void callbackTargetPose(const geometry_msgs::PoseStampedConstPtr& msg);
         void callbackTargetVel(const geometry_msgs::TwistStampedConstPtr& msg);
@@ -104,6 +106,15 @@ void Controller::update(){
 
 geometry_msgs::Twist Controller::getCommandVelocity(){
     return mCommandVel;
+}
+
+geometry_msgs::Twist Controller::getCommandVelocityInWorld() {
+    geometry_msgs::Twist cmdvel_in_world;
+    double yaw = yawFromQuaternion(mRealPose.orientation);
+    cmdvel_in_world.linear.x = mCommandVel.linear.x * cos(yaw) - mCommandVel.linear.y * sin(yaw);
+    cmdvel_in_world.linear.y = mCommandVel.linear.x * sin(yaw) + mCommandVel.linear.y * cos(yaw);
+    cmdvel_in_world.angular.z = mCommandVel.angular.z;
+    return std::move(cmdvel_in_world);
 }
 
 geometry_msgs::Point Controller::getAvoidingPoint(){
@@ -417,13 +428,19 @@ int main(int argc, char **argv){
     f = boost::bind(&Controller::callbackReconfigure, &controller, _1, _2);
     reconfigure_server.setCallback(f);
 
-    ros::Publisher publisher = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
+    ros::Publisher cmd_vel_publisher = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1000);
+    ros::Publisher cmd_vel_transformed_publisher = nh.advertise<geometry_msgs::Twist>("cmd_vel_world", 1000);
 
     while (ros::ok()){
         controller.update();
         geometry_msgs::Twist cmdVel = controller.getCommandVelocity();
 
-        publisher.publish(cmdVel);
+        cmd_vel_publisher.publish(cmdVel);
+
+        if (cmd_vel_transformed_publisher.getNumSubscribers() > 0) {
+            geometry_msgs::Twist cmdVelInWorld = Controller::getCommandVelocityInWorld();
+            cmd_vel_transformed_publisher.publish(cmdVelInWorld);
+        }
 
         ros::spinOnce();
         r.sleep();
