@@ -57,6 +57,7 @@ class TacticInplayReceiveAndShoot(Sequence):
         SHOOT.add_child(BallKicked('BallKicked', 0.05))
         SHOOT.add_child(WithDefenceAreaAvoidance('AvoidDefenceArea', my_role))
         SHOOT.add_child(WithDribble('Dribbling', my_role))
+        SHOOT.add_child(WithKickIfLookingAt('WithKickIfLookingAt', my_role, 'ANALY_PATH', np.deg2rad(0.5)))
         SHOOT.add_child(Print('%s kicks!'%(my_role)))
 
         shoot_seq.add_child(DRIVE)
