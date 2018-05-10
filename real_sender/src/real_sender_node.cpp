@@ -32,7 +32,7 @@ public:
             ip_suffix = 20;
         }
         ip_suffix += 10;
-        std::string ipaddr = (boost::format("192.168.15.%2d")%(ip_suffix)).str();
+        std::string ipaddr = (boost::format("192.168.15.%02d")%(ip_suffix)).str();
         addr.sin_addr.s_addr = inet_addr(ipaddr.c_str());
 
         ROS_INFO("Set Robot(%d) IPaddr to %s", mID_, ipaddr.c_str());
