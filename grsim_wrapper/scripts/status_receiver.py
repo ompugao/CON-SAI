@@ -8,7 +8,11 @@ class StatusReceiver(object):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
         #self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind(("127.0.0.1", 30011))
+        friend_color = rospy.get_param('friend_color', 'blue')
+        port = 30011
+        if friend_color == 'yellow':
+            port = 30012
+        self.sock.bind(("127.0.0.1", port))
         self.status = grSim_RobotStatus_pb2.grSim_Robot_Status()
         self.msg = robot_status()
         self.pub = rospy.Publisher('~robot_status', robot_status, queue_size=10)
